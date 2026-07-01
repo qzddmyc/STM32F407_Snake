@@ -179,7 +179,7 @@ static void Play_Death_Alert(void) {
     uint8_t j;
     for (j = 0; j < 4; j++) {
         LED0 = 0; 
-        BEEP = 1; 
+        BEEP_ON(); 
         delay_ms(80);
         LED0 = 1; 
         BEEP = 0; 
@@ -329,7 +329,7 @@ void Snake_Game_Tick(void) {
         if (next_head.x == myFood.x && next_head.y == myFood.y) {
             ate_food = 1;
             LED1 = 0; // 绿灯闪
-            BEEP = 1; delay_ms(30); BEEP = 0; 
+            BEEP_ON(); delay_ms(30); BEEP = 0; 
             LED1 = 1;
         }
         
@@ -445,13 +445,13 @@ void Snake_Game_Tick(void) {
         if (next_head_1.x == myFood.x && next_head_1.y == myFood.y) {
             ate_food_1 = 1;
             LED1 = 0; // 红色抢到，绿色LED闪
-            BEEP = 1; delay_ms(30); BEEP = 0;
+            BEEP_ON(); delay_ms(30); BEEP = 0;
             LED1 = 1;
         }
         if (next_head_2.x == myFood.x && next_head_2.y == myFood.y) {
             ate_food_2 = 1;
             LED0 = 0; // 蓝色抢到，红色LED闪（硬件区分反馈）
-            BEEP = 1; delay_ms(30); BEEP = 0;
+            BEEP_ON(); delay_ms(30); BEEP = 0;
             LED0 = 1;
         }
 

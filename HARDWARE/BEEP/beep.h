@@ -17,6 +17,9 @@
 //LED端口定义
 #define BEEP PFout(8)	// 蜂鸣器控制IO 
 
+extern uint8_t beep_enable;       // 蜂鸣器静音开关：1=正常发声，0=静音（默认0）
+#define BEEP_ON() do { if (beep_enable) BEEP = 1; } while(0)
+
 void BEEP_Init(void);//初始化		 				    
 #endif
 

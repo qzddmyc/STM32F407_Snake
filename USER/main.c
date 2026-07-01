@@ -162,7 +162,7 @@ int main(void)
         if (current_state == GAME_RUNNING && KEY2 == 0 && KEY0 == 0) 
         {
             current_state = GAME_PAUSED;
-            BEEP = 1; delay_ms(80); BEEP = 0; 
+            BEEP_ON(); delay_ms(80); BEEP = 0; 
             while (KEY2 == 0 || KEY0 == 0) {
                 delay_ms(10);
             }
@@ -253,9 +253,9 @@ int main(void)
                             EEPROM_Write_HighScore(high_score); 
                             is_new_record = 1;
                             
-                            BEEP = 1; delay_ms(60); BEEP = 0; delay_ms(60);
-                            BEEP = 1; delay_ms(60); BEEP = 0; delay_ms(60);
-                            BEEP = 1; delay_ms(60); BEEP = 0;
+                            BEEP_ON(); delay_ms(60); BEEP = 0; delay_ms(60);
+                            BEEP_ON(); delay_ms(60); BEEP = 0; delay_ms(60);
+                            BEEP_ON(); delay_ms(60); BEEP = 0;
                         }
                     }
 
@@ -322,7 +322,7 @@ int main(void)
                         menu_focus = 0;
                         Draw_Start_Button(0);
                         Draw_Difficulty_Menu(game_difficulty, 1);
-                        BEEP = 1; delay_ms(30); BEEP = 0;
+                        BEEP_ON(); delay_ms(30); BEEP = 0;
                     }
                     // menu_focus == 0（难度选择）：无反应，已到达左边界
                 }
@@ -335,12 +335,12 @@ int main(void)
                         menu_focus = 1;
                         Draw_Difficulty_Menu(game_difficulty, 0);
                         Draw_Start_Button(1);
-                        BEEP = 1; delay_ms(30); BEEP = 0;
+                        BEEP_ON(); delay_ms(30); BEEP = 0;
                     }
                     else if (menu_focus == 1) // 当前在 Start，确认进入游戏
                     {
                         current_state = GAME_RUNNING;
-                        BEEP = 1; delay_ms(30); BEEP = 0;
+                        BEEP_ON(); delay_ms(30); BEEP = 0;
                     }
                 }
                 
@@ -350,11 +350,11 @@ int main(void)
                     if (game_difficulty == DIFF_HARD) {
                         game_difficulty = DIFF_MEDIUM;
                         Draw_Difficulty_Menu(game_difficulty, 1);
-                        BEEP = 1; delay_ms(30); BEEP = 0;
+                        BEEP_ON(); delay_ms(30); BEEP = 0;
                     } else if (game_difficulty == DIFF_MEDIUM) {
                         game_difficulty = DIFF_EASY;
                         Draw_Difficulty_Menu(game_difficulty, 1);
-                        BEEP = 1; delay_ms(30); BEEP = 0;
+                        BEEP_ON(); delay_ms(30); BEEP = 0;
                     }
                     // DIFF_EASY：无反应，已到达上边界
                 }
@@ -365,11 +365,11 @@ int main(void)
                     if (game_difficulty == DIFF_EASY) {
                         game_difficulty = DIFF_MEDIUM;
                         Draw_Difficulty_Menu(game_difficulty, 1);
-                        BEEP = 1; delay_ms(30); BEEP = 0;
+                        BEEP_ON(); delay_ms(30); BEEP = 0;
                     } else if (game_difficulty == DIFF_MEDIUM) {
                         game_difficulty = DIFF_HARD;
                         Draw_Difficulty_Menu(game_difficulty, 1);
-                        BEEP = 1; delay_ms(30); BEEP = 0;
+                        BEEP_ON(); delay_ms(30); BEEP = 0;
                     }
                     // DIFF_HARD：无反应，已到达下边界
                 }
@@ -469,12 +469,12 @@ int main(void)
                 if (key_val == WKUP_PRES) 
                 {
                     current_state = GAME_RUNNING;
-                    BEEP = 1; delay_ms(30); BEEP = 0;
+                    BEEP_ON(); delay_ms(30); BEEP = 0;
                 }
                 if (key_val == KEY1_PRES) 
                 {
                     current_state = GAME_MENU;
-                    BEEP = 1; delay_ms(30); BEEP = 0;
+                    BEEP_ON(); delay_ms(30); BEEP = 0;
                 }
                 break;
 
