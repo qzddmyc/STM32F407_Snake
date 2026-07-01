@@ -9,7 +9,7 @@
 #include "led.h"
 
 extern uint32_t score;
-extern uint8_t winner; // 引入 snake.c 中的赢家标志位
+// extern uint8_t winner; // 【已移除双人对战】引入 snake.c 中的赢家标志位
 
 // 探索者开发板按键物理键值
 #define KEY0_PRES    1  // 最右侧按键 (PE4) -> 菜单：右选择  | 游戏：向右
@@ -74,14 +74,41 @@ void Draw_Mode_Menu(Game_Mode mode, uint8_t focus)
         LCD_ShowString(160, 470, 200, 16, 16, "  SINGLE PLAYER  ");
     }
     
-    // 双人对战模式
-    if (mode == MODE_BATTLE) {
-        POINT_COLOR = (focus == 1) ? CYAN : GRAY;
-        LCD_ShowString(160, 500, 200, 16, 16, ">  BATTLE MODE  <");
+    // 【已移除双人对战】双人对战模式
+    // if (mode == MODE_BATTLE) {
+    //     POINT_COLOR = (focus == 1) ? CYAN : GRAY;
+    //     LCD_ShowString(160, 500, 200, 16, 16, ">  BATTLE MODE  <");
+    // } else {
+    //     POINT_COLOR = GRAY;
+    //     LCD_ShowString(160, 500, 200, 16, 16, "   BATTLE MODE   ");
+    // }
+}
+
+// 内部辅助函数：局部更新"START"按钮（选中时实心白色+黑字，未选中时空心白框+白字）
+void Draw_Start_Button(uint8_t focus)
+{
+    uint16_t game_area_w = GAME_GRID_NUM_X * GRID_SIZE;
+    uint16_t btn_w = game_area_w * 2 / 10;   // 0.2 倍游戏区域宽度 = 86
+    uint16_t btn_h = btn_w * 6 / 10;          // 0.6 倍按钮宽度 = 52
+    uint16_t btn_x = (480 - btn_w) / 2;       // 水平居中
+    uint16_t btn_y = (406 + 540 - btn_h) / 2; // 竖直居中于 HARD(406) 与提示(540) 之间
+    uint16_t text_w = 5 * 8;                  // "START" 5 字符宽 40px
+    uint16_t text_x = btn_x + (btn_w - text_w) / 2;
+    uint16_t text_y = btn_y + (btn_h - 16) / 2;
+    
+    if (focus == 1) {
+        // 选中：实心白色矩形 + 黑色文字
+        LCD_Fill(btn_x, btn_y, btn_x + btn_w - 1, btn_y + btn_h - 1, WHITE);
+        POINT_COLOR = BLACK;
+        BACK_COLOR = WHITE;
     } else {
-        POINT_COLOR = GRAY;
-        LCD_ShowString(160, 500, 200, 16, 16, "   BATTLE MODE   ");
+        // 未选中：空心白色矩形框 + 白色文字 + 黑色背景
+        POINT_COLOR = WHITE;
+        LCD_DrawRectangle(btn_x, btn_y, btn_x + btn_w - 1, btn_y + btn_h - 1);
+        POINT_COLOR = WHITE;
+        BACK_COLOR = BLACK;
     }
+    LCD_ShowString(text_x, text_y, text_w, 16, 16, "START");
 }
 
 int main(void)
@@ -103,7 +130,7 @@ int main(void)
     uint32_t temp_mm = 0;              
     uint32_t temp_ss = 0;              
 
-    uint8_t menu_focus = 0;            // 0: 光标在难度选择上， 1: 光标在模式选择上
+    uint8_t menu_focus = 0;            // 0: 难度选择聚焦， 1: Start 按钮聚焦
 
     // 1. 系统外设初始化
     delay_init(168);     
@@ -181,9 +208,9 @@ int main(void)
                     POINT_COLOR = WHITE;
                     LCD_ShowString(110, 240, 300, 16, 16, "Press WK_UP to Start");
                     
-                    // 局部更新两个选择菜单（初试时高亮难度选择，失焦模式选择）
+                    // 局部更新选择菜单（难度选择 + Start 按钮）
                     Draw_Difficulty_Menu(game_difficulty, 1);
-                    Draw_Mode_Menu(game_mode, 0);
+                    Draw_Start_Button(0); // 初始未选中 Start
                     
                     POINT_COLOR = GRAY;
                     LCD_ShowString(120, 540, 300, 16, 16, "WK_UP : Move UP      KEY1: Move DOWN");      
@@ -192,9 +219,9 @@ int main(void)
                     POINT_COLOR = WHITE;
                     LCD_ShowString(100, 610, 300, 16, 16, "Menu Controls:");
                     POINT_COLOR = GRAY;
-                    LCD_ShowString(100, 630, 300, 16, 16, "KEY2/KEY0: Change Selection");
-                    LCD_ShowString(100, 650, 300, 16, 16, "KEY1     : Switch Focus (Diff/Mode)");
-                    LCD_ShowString(100, 670, 300, 16, 16, "WK_UP    : Start Game");
+                    LCD_ShowString(100, 630, 300, 16, 16, "KEY2/KEY0: Move Focus (Left/Right)");
+                    LCD_ShowString(100, 650, 300, 16, 16, "WK_UP/KEY1: Change Difficulty (Up/Down)");
+                    LCD_ShowString(100, 670, 300, 16, 16, "KEY0 on START: Confirm & Play");
                 } 
                 else if (current_state == GAME_RUNNING) //从主菜单来到游戏
                 {
@@ -256,25 +283,25 @@ int main(void)
                             LCD_ShowString(140, 310, 200, 16, 16, "NEW RECORD!");
                         }
                     }
-                    else 
-                    {
-                        // 双人对战模式：显示争夺总分，并炫酷点出赢家！
-                        POINT_COLOR = WHITE;
-                        LCD_ShowString(160, 220, 200, 16, 16, "Total: "); // 同屏抢夺总分
-                        LCD_ShowNum(220, 220, score, 3, 16);
-                        
-                        // 根据 winner 的值，用不同颜色的大字画出最终赢家
-                        if (winner == 1) {
-                            POINT_COLOR = GREEN; // 1号玩家胜，亮绿色大字
-                            LCD_ShowString(140, 270, 220, 24, 24, "RED PLAYER WINS!");
-                        } else if (winner == 2) {
-                            POINT_COLOR = CYAN;  // 2号玩家胜，亮青色大字
-                            LCD_ShowString(140, 270, 220, 24, 24, "BLUE PLAYER WINS!");
-                        } else {
-                            POINT_COLOR = YELLOW;// 战平同归于尽
-                            LCD_ShowString(160, 270, 200, 24, 24, "DRAW GAME!");
-                        }
-                    }
+                    // 【已移除双人对战】else 
+                    // {
+                    //     // 双人对战模式：显示争夺总分，并炫酷点出赢家！
+                    //     POINT_COLOR = WHITE;
+                    //     LCD_ShowString(160, 220, 200, 16, 16, "Total: "); // 同屏抢夺总分
+                    //     LCD_ShowNum(220, 220, score, 3, 16);
+                    //     
+                    //     // 根据 winner 的值，用不同颜色的大字画出最终赢家
+                    //     if (winner == 1) {
+                    //         POINT_COLOR = GREEN; // 1号玩家胜，亮绿色大字
+                    //         LCD_ShowString(140, 270, 220, 24, 24, "RED PLAYER WINS!");
+                    //     } else if (winner == 2) {
+                    //         POINT_COLOR = CYAN;  // 2号玩家胜，亮青色大字
+                    //         LCD_ShowString(140, 270, 220, 24, 24, "BLUE PLAYER WINS!");
+                    //     } else {
+                    //         POINT_COLOR = YELLOW;// 战平同归于尽
+                    //         LCD_ShowString(160, 270, 200, 24, 24, "DRAW GAME!");
+                    //     }
+                    // }
                     
                     POINT_COLOR = WHITE;
                     LCD_ShowString(110, 380, 300, 16, 16, "Press KEY0 to Restart");
@@ -287,55 +314,64 @@ int main(void)
         switch (current_state) 
         {
             case GAME_MENU:
-                // KEY1：在“选择难度”和“选择模式”之间切换光标焦点
-                if (key_val == KEY1_PRES) 
-                {
-                    menu_focus = !menu_focus;
-                    Draw_Difficulty_Menu(game_difficulty, (menu_focus == 0));
-                    Draw_Mode_Menu(game_mode, (menu_focus == 1));
-                    BEEP = 1; delay_ms(30); BEEP = 0;      
-                }
-                
-                // KEY2：左切换选项
+                // KEY2（左）：焦点左移。Start → 难度选择；难度选择 → 无反应（左边界）
                 if (key_val == KEY2_PRES) 
                 {
-                    if (menu_focus == 0) // 焦点在难度上
+                    if (menu_focus == 1) // 当前在 Start，左移到难度选择
                     {
-                        if (game_difficulty == DIFF_EASY) game_difficulty = DIFF_HARD;
-                        else game_difficulty = (Difficulty)(game_difficulty - 1);
+                        menu_focus = 0;
+                        Draw_Start_Button(0);
                         Draw_Difficulty_Menu(game_difficulty, 1);
+                        BEEP = 1; delay_ms(30); BEEP = 0;
                     }
-                    else // 焦点在模式上
-                    {
-                        if (game_mode == MODE_SINGLE) game_mode = MODE_BATTLE;
-                        else game_mode = (Game_Mode)(game_mode - 1);
-                        Draw_Mode_Menu(game_mode, 1);
-                    }
-                    BEEP = 1; delay_ms(30); BEEP = 0;      
+                    // menu_focus == 0（难度选择）：无反应，已到达左边界
                 }
                 
-                // KEY0：右切换选项
+                // KEY0（右）：焦点右移 / 确认进入游戏
                 if (key_val == KEY0_PRES) 
                 {
-                    if (menu_focus == 0) // 焦点在难度上
+                    if (menu_focus == 0) // 当前在难度选择，右移到 Start
                     {
-                        if (game_difficulty == DIFF_HARD) game_difficulty = DIFF_EASY;
-                        else game_difficulty = (Difficulty)(game_difficulty + 1);
-                        Draw_Difficulty_Menu(game_difficulty, 1);
+                        menu_focus = 1;
+                        Draw_Difficulty_Menu(game_difficulty, 0);
+                        Draw_Start_Button(1);
+                        BEEP = 1; delay_ms(30); BEEP = 0;
                     }
-                    else // 焦点在模式上
+                    else if (menu_focus == 1) // 当前在 Start，确认进入游戏
                     {
-                        if (game_mode == MODE_BATTLE) game_mode = MODE_SINGLE;
-                        else game_mode = (Game_Mode)(game_mode + 1);
-                        Draw_Mode_Menu(game_mode, 1);
+                        current_state = GAME_RUNNING;
+                        BEEP = 1; delay_ms(30); BEEP = 0;
                     }
-                    BEEP = 1; delay_ms(30); BEEP = 0;      
                 }
                 
-                // WK_UP：确定开始游戏
-                if (key_val == WKUP_PRES) 
+                // WK_UP（上）：仅在难度选择聚焦时，向上调整难度（HARD→MEDIUM→EASY，EASY为上边界）
+                if (key_val == WKUP_PRES && menu_focus == 0) 
                 {
-                    current_state = GAME_RUNNING; 
+                    if (game_difficulty == DIFF_HARD) {
+                        game_difficulty = DIFF_MEDIUM;
+                        Draw_Difficulty_Menu(game_difficulty, 1);
+                        BEEP = 1; delay_ms(30); BEEP = 0;
+                    } else if (game_difficulty == DIFF_MEDIUM) {
+                        game_difficulty = DIFF_EASY;
+                        Draw_Difficulty_Menu(game_difficulty, 1);
+                        BEEP = 1; delay_ms(30); BEEP = 0;
+                    }
+                    // DIFF_EASY：无反应，已到达上边界
+                }
+                
+                // KEY1（下）：仅在难度选择聚焦时，向下调整难度（EASY→MEDIUM→HARD，HARD为下边界）
+                if (key_val == KEY1_PRES && menu_focus == 0) 
+                {
+                    if (game_difficulty == DIFF_EASY) {
+                        game_difficulty = DIFF_MEDIUM;
+                        Draw_Difficulty_Menu(game_difficulty, 1);
+                        BEEP = 1; delay_ms(30); BEEP = 0;
+                    } else if (game_difficulty == DIFF_MEDIUM) {
+                        game_difficulty = DIFF_HARD;
+                        Draw_Difficulty_Menu(game_difficulty, 1);
+                        BEEP = 1; delay_ms(30); BEEP = 0;
+                    }
+                    // DIFF_HARD：无反应，已到达下边界
                 }
                 break;
 
