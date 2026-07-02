@@ -25,33 +25,33 @@ void Draw_Difficulty_Menu(Difficulty diff, uint8_t focus)
     // 如果焦点在难度选择上，大标题显示为白色，否则为灰色
     if (focus == 1) POINT_COLOR = WHITE;
     else POINT_COLOR = GRAY;
-    LCD_ShowString(140, 300, 200, 16, 16, "Select Difficulty:");
+    LCD_ShowString(140, 280, 200, 16, 16, "Select Difficulty:");
     
     // 简单难度
     if (diff == DIFF_EASY) {
         POINT_COLOR = (focus == 1) ? GREEN : GRAY; // 聚焦时绿色，失焦时灰色
-        LCD_ShowString(180, 330, 150, 16, 16, ">  EASY  <");
+        LCD_ShowString(180, 310, 150, 16, 16, ">  EASY  <");
     } else {
         POINT_COLOR = GRAY;
-        LCD_ShowString(180, 330, 150, 16, 16, "   EASY   ");
+        LCD_ShowString(180, 310, 150, 16, 16, "   EASY   ");
     }
     
     // 中等难度
     if (diff == DIFF_MEDIUM) {
         POINT_COLOR = (focus == 1) ? YELLOW : GRAY; // 聚焦时黄色
-        LCD_ShowString(180, 360, 150, 16, 16, "> MEDIUM <");
+        LCD_ShowString(180, 340, 150, 16, 16, "> MEDIUM <");
     } else {
         POINT_COLOR = GRAY;
-        LCD_ShowString(180, 360, 150, 16, 16, "  MEDIUM  ");
+        LCD_ShowString(180, 340, 150, 16, 16, "  MEDIUM  ");
     }
     
     // 困难难度
     if (diff == DIFF_HARD) {
         POINT_COLOR = (focus == 1) ? RED : GRAY; // 聚焦时红色
-        LCD_ShowString(180, 390, 150, 16, 16, ">  HARD  <");
+        LCD_ShowString(180, 370, 150, 16, 16, ">  HARD  <");
     } else {
         POINT_COLOR = GRAY;
-        LCD_ShowString(180, 390, 150, 16, 16, "   HARD   ");
+        LCD_ShowString(180, 370, 150, 16, 16, "   HARD   ");
     }
 }
 
@@ -90,8 +90,8 @@ void Draw_Start_Button(uint8_t focus)
     uint16_t game_area_w = GAME_GRID_NUM_X * GRID_SIZE;
     uint16_t btn_w = game_area_w * 2 / 10;   // 0.2 倍游戏区域宽度 = 86
     uint16_t btn_h = btn_w * 6 / 10;          // 0.6 倍按钮宽度 = 52
-    uint16_t btn_x = (480 - btn_w) / 2;       // 水平居中
-    uint16_t btn_y = (406 + 540 - btn_h) / 2; // 竖直居中于 HARD(406) 与提示(540) 之间
+    uint16_t btn_x = (480 - btn_w) / 2 - 20;       // 水平居中
+    uint16_t btn_y = (356 + 540 - btn_h) / 2; // 竖直居中于 HARD(356) 与提示(540) 之间
     uint16_t text_w = 5 * 8;                  // "START" 5 字符宽 40px
     uint16_t text_x = btn_x + (btn_w - text_w) / 2;
     uint16_t text_y = btn_y + (btn_h - 16) / 2;
@@ -103,6 +103,7 @@ void Draw_Start_Button(uint8_t focus)
         BACK_COLOR = WHITE;
     } else {
         // 未选中：空心白色矩形框 + 白色文字 + 黑色背景
+        LCD_Fill(btn_x, btn_y, btn_x + btn_w - 1, btn_y + btn_h - 1, BLACK);
         POINT_COLOR = WHITE;
         LCD_DrawRectangle(btn_x, btn_y, btn_x + btn_w - 1, btn_y + btn_h - 1);
         POINT_COLOR = WHITE;
@@ -205,22 +206,22 @@ int main(void)
                     LCD_ShowString(170, 180, 200, 16, 16, "BEST: ");
                     LCD_ShowNum(230, 180, high_score, 3, 16);
                     
-                    POINT_COLOR = WHITE;
-                    LCD_ShowString(110, 240, 300, 16, 16, "Press WK_UP to Start");
+                    // POINT_COLOR = WHITE;
+                    // LCD_ShowString(110, 240, 300, 16, 16, "Press WK_UP to Start");
                     
                     // 局部更新选择菜单（难度选择 + Start 按钮）
                     Draw_Difficulty_Menu(game_difficulty, 1);
                     Draw_Start_Button(0); // 初始未选中 Start
                     
                     POINT_COLOR = GRAY;
-                    LCD_ShowString(120, 540, 300, 16, 16, "WK_UP : Move UP      KEY1: Move DOWN");      
-                    LCD_ShowString(120, 560, 300, 16, 16, "KEY2  : Move LEFT    KEY0: Move RIGHT");    
+                    LCD_ShowString(100, 540, 300, 16, 16, "WK_UP : Move UP      KEY1: Move DOWN");      
+                    LCD_ShowString(100, 560, 300, 16, 16, "KEY2  : Move LEFT    KEY0: Move RIGHT");    
                     
                     POINT_COLOR = WHITE;
                     LCD_ShowString(100, 610, 300, 16, 16, "Menu Controls:");
                     POINT_COLOR = GRAY;
                     LCD_ShowString(100, 630, 300, 16, 16, "KEY2/KEY0: Move Focus (Left/Right)");
-                    LCD_ShowString(100, 650, 300, 16, 16, "WK_UP/KEY1: Change Difficulty (Up/Down)");
+                    LCD_ShowString(100, 650, 320, 16, 16, "WK_UP/KEY1: Change Difficulty (Up/Down)");
                     LCD_ShowString(100, 670, 300, 16, 16, "KEY0 on START: Confirm & Play");
                 } 
                 else if (current_state == GAME_RUNNING) //从主菜单来到游戏
