@@ -1,151 +1,102 @@
-# STM32F407 贪吃蛇游戏（Snake Game）
+# STM32F407 贪吃蛇游戏
 
-基于正点原子探索者 STM32F4 开发板的贪吃蛇游戏项目。
-
----
-
-## 项目结构
-
-```
-STM32F407_Snake/
-├── CORE/          # ARM Cortex-M4 核心支持文件（启动文件、CMSIS 头文件）
-├── FWLIB/         # STM32F4xx 标准外设库（GPIO、RCC、USART、SPI 等驱动）
-│   ├── inc/       #   外设头文件
-│   └── src/       #   外设源文件
-├── HARDWARE/      # 板级硬件驱动
-│   ├── BEEP/      #   蜂鸣器驱动
-│   ├── KEY/       #   按键扫描驱动
-│   ├── LCD/       #   TFT-LCD 液晶屏驱动
-│   └── LED/       #   LED 灯驱动
-├── SYSTEM/        # 系统级模块
-│   ├── delay/     #   延时函数（SysTick）
-│   ├── sys/       #   系统初始化
-│   └── usart/     #   串口驱动
-├── USER/          # 用户应用层（核心游戏代码）
-│   ├── main.c     #   主程序入口 + 状态机
-│   ├── snake.c    #   贪吃蛇游戏逻辑
-│   ├── snake.h    #   贪吃蛇数据结构与接口定义
-│   ├── eeprom.c/h #   EEPROM 读写（最高分存储）
-│   └── ...
-├── OBJ/           # 编译中间产物
-└── keilkilll.bat  # 清理编译文件脚本
-```
+基于正点原子探索者 STM32F4 开发板的贪吃蛇游戏。
 
 ---
 
-## 硬件平台
+## 硬件
 
 | 组件 | 说明 |
 |------|------|
-| **MCU** | STM32F407ZGT6（ARM Cortex-M4，168MHz） |
-| **屏幕** | ALIENTEK TFT-LCD 模块（2.8/3.5/4.3/7 寸，FSMC 驱动，竖屏 480×800） |
-| **按键** | 4 个：WK_UP(PA0)、KEY2(PE2)、KEY1(PE3)、KEY0(PE4) |
-| **蜂鸣器** | 操作反馈音效 + 新纪录提示 |
-| **LED** | DS0(PF9) 状态指示 |
-| **串口** | USART1，波特率 115200，PA9/PA10 |
-| **EEPROM** | I?C 接口，用于掉电保存历史最高分 |
+| MCU | STM32F407ZGT6, 168MHz |
+| 屏幕 | TFT-LCD 480x800 竖屏, FSMC 驱动 |
+| 按键 | WK_UP(PA0), KEY2(PE2), KEY1(PE3), KEY0(PE4) |
+| 蜂鸣器 | PF8, 支持静音开关 |
+| LED | DS0(PF9), DS1(PF10) |
+| 串口 | USART1, 115200, PA9/PA10 (CH340) |
+| EEPROM | I2C, 掉电保存最高分 |
 
 ---
 
-## 软件架构 — 有限状态机（FSM）
+## 状态机
 
 ```mermaid
 stateDiagram-v2
     [*] --> GAME_MENU
-    GAME_MENU --> GAME_RUNNING : WK_UP 确认开始
-    GAME_RUNNING --> GAME_PAUSED : KEY2+KEY0 组合键暂停
-    GAME_PAUSED --> GAME_RUNNING : WK_UP 继续游戏
-    GAME_PAUSED --> GAME_MENU : KEY1 退出到菜单
-    GAME_RUNNING --> GAME_OVER : 蛇撞墙/撞自身
+    GAME_MENU --> GAME_RUNNING : KEY0 在 START 上确认
+    GAME_RUNNING --> GAME_PAUSED : KEY2 + KEY0 同时按下
+    GAME_PAUSED --> GAME_RUNNING : WK_UP 继续
+    GAME_PAUSED --> GAME_MENU : KEY1 退出
+    GAME_RUNNING --> GAME_OVER : 撞墙 / 撞自身
     GAME_OVER --> GAME_MENU : KEY0 重新开始
 ```
 
 ---
 
-## 菜单系统（GAME_MENU）
-
-菜单为单级难度选择：
-
-### 难度选择
-
-| 难度 | 颜色 | 初始速度阈值 | 变速公式 | 下限 |
-|------|------|:----------:|---------|:---:|
-| EASY | 绿色 | 25 | `25 ? food_eaten/2` | 10 |
-| MEDIUM | 黄色 | 18 | `18 ? food_eaten`（前 13 个） | 5 |
-| HARD | 红色 | 11 | `11 ? food_eaten`（前 8 个） | 3 |
-
-> 速度阈值越小，蛇移动越快。每吃 10 分（一个食物）计为 `food_eaten + 1`。
-
-### 操作方式
+## 菜单操作
 
 | 按键 | 功能 |
 |------|------|
-| `KEY2` / `KEY0` | 左 / 右切换难度 |
-| `WK_UP` | 确认开始游戏 |
+| `KEY2` / `KEY0` | 左右移动焦点（难度选择 ? START 按钮） |
+| `WK_UP` / `KEY1` | 仅在难度聚焦时：上/下调整难度（带边界，不循环） |
+| `KEY0`（在 START 上） | 确认进入游戏 |
+
+难度聚焦时 LCD 高亮显示 `Select Difficulty:`，选中 START 时按钮变为白底黑字实心。
+
+### 难度
+
+| 难度 | 初始速度 | 加速规则 | 下限 |
+|------|:---:|------|:---:|
+| EASY | 25 | 每吃 2 个食物 -1 | 10 |
+| MEDIUM | 18 | 每吃 1 个食物 -1 | 5 |
+| HARD | 11 | 每吃 1 个食物 -1 | 3 |
 
 ---
 
-## 游戏核心逻辑（GAME_RUNNING）
-
-### 按键映射
+## 游戏操作
 
 | 按键 | 方向 |
 |------|:---:|
-| WK_UP (PA0) | ↑ 上 |
-| KEY2 (PE2) | ← 左 |
-| KEY1 (PE3) | ↓ 下 |
-| KEY0 (PE4) | → 右 |
+| WK_UP | 上 |
+| KEY2 | 左 |
+| KEY1 | 下 |
+| KEY0 | 右 |
+| KEY2 + KEY0 同时 | 暂停 |
 
-### 动态变速
+### HUD
 
-根据已吃食物数量 `food_eaten = score / 10` 动态降低速度阈值（非线性的分段变速），让游戏节奏随分数逐步加快。
-
-### HUD 抬头显示
-
-屏幕顶部实时显示（防闪烁局部刷新）：
-
-- **Score** — 当前得分
-- **Speed: Lxx** — 当前速度等级
-- **TIME: MM:SS** — 生存时间（10ms 精度累积）
+屏幕顶部显示：Score / Speed Lx / TIME MM:SS
 
 ---
 
-## 暂停系统（GAME_PAUSED）
+## 串口调试
 
-- **触发**：同时按下 `KEY2 + KEY0`（组合键防误触）
-- **继续**：按 `WK_UP` 返回游戏
-- **退出**：按 `KEY1` 返回主菜单
-- 暂停时弹出半透明悬浮窗，显示操作提示
+USART1 115200 连接串口调试助手。
 
----
+### 自动输出
 
-## 结算系统（GAME_OVER）
+| 事件 | 格式 |
+|------|------|
+| 启动 | `[INIT] Snake game ready` |
+| 吃食物 | `[SCORE] N pts \| Speed Lx (threshold=N)` |
+| 死亡 | `[DEAD] Hit wall at (x, y)` 或 `Self-collision at (x, y)` |
+| 新食物 | `[FOOD] Generated at (x, y)` |
 
-- 显示最终得分与生存时间
-- 若打破纪录：EEPROM 自动保存 + 蜂鸣器三连响 + `NEW RECORD!` 标签
+### 指令（仅小写）
 
----
+| 指令 | 功能 | 限制 |
+|------|------|------|
+| `beep on` / `beep off` | 蜂鸣器开关 | 无 |
+| `diff easy` / `medium` / `hard` | 切换难度 | 仅菜单中生效 |
 
-## 技术亮点
-
-1. **完善的状态机设计** — 菜单→游戏→暂停→结算 流转清晰
-2. **三级难度 + 动态变速** — 非线性加速曲线，节奏逐步紧张
-3. **EEPROM 持久化** — 最高分掉电不丢失
-4. **精细化 UI 渲染** — 蛇头带方向感知的眼睛、局部刷新防闪烁
-5. **组合键暂停** — KEY2+KEY0 防误触设计
-6. **无闪烁刷新** — 菜单/游戏区/HUD 均采用仅在值变化时才局部更新的策略
+每条指令均回复 `[CMD] ...` 确认。蜂鸣器默认静音（`beep_enable = 0`）。
 
 ---
-
-## 实验器材
-
-- 探索者 STM32F4 开发板
-- ALIENTEK TFT-LCD 模块（2.8/3.5/4.3/7 寸）
 
 ## 注意事项
 
-- 4.3 寸和 7 寸屏电流较大，USB 供电可能不足，请使用外部 12V 1A 电源适配器
-- `LCD_Init` 函数内使用了 `printf`，必须初始化串口 1，否则液晶无法显示
+- 4.3/7 寸屏需外部 12V 1A 供电
+- 串口必须初始化，否则 LCD 及 printf 无法工作
 
 ---
 

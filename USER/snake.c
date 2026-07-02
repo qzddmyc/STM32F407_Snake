@@ -3,6 +3,7 @@
 #include "delay.h" 
 #include "led.h"    
 #include <stdlib.h> 
+#include "usart.h"
 
 // ==================== 0. 全局变量定义（已全部补齐，解决 L6218E 链接错误） ====================
 Game_State current_state = GAME_MENU;
@@ -145,6 +146,7 @@ static void Generate_Food(void) {
         }
     }
     Draw_Food_Apple(myFood.x, myFood.y); 
+    printf("[FOOD] Generated at (%d, %d)\r\n", myFood.x, myFood.y);
 }
 
 // 改变 1 号蛇方向
@@ -309,6 +311,7 @@ void Snake_Game_Tick(void) {
         // 碰撞：撞墙
         if (next_head.x < 0 || next_head.x >= GAME_GRID_NUM_X ||
             next_head.y < 0 || next_head.y >= GAME_GRID_NUM_Y) {
+            printf("[DEAD] Hit wall at (%d, %d)\r\n", next_head.x, next_head.y);
             current_state = GAME_OVER;
             winner = 0; 
             Play_Death_Alert();
@@ -318,6 +321,7 @@ void Snake_Game_Tick(void) {
         // 碰撞：撞自身
         for (i = 1; i < mySnake.length - 1; i++) {
             if (next_head.x == mySnake.body[i].x && next_head.y == mySnake.body[i].y) {
+                printf("[DEAD] Self-collision at (%d, %d)\r\n", next_head.x, next_head.y);
                 current_state = GAME_OVER;
                 winner = 0;
                 Play_Death_Alert();

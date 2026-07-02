@@ -7,6 +7,7 @@
 #include "snake.h"
 #include "eeprom.h"
 #include "led.h"
+#include <string.h>
 
 extern uint32_t score;
 // extern uint8_t winner; // 【已移除双人对战】引入 snake.c 中的赢家标志位
@@ -112,6 +113,74 @@ void Draw_Start_Button(uint8_t focus)
     LCD_ShowString(text_x, text_y, text_w, 16, 16, "START");
 }
 
+static uint8_t menu_focus = 0; // 0: 难度选择聚焦， 1: Start 按钮聚焦
+
+// 串口指令解析与执行（支持 \r\n 或无换行符两种形式）
+void Serial_CMD_Handler(void)
+{
+    static uint16_t last_rx_len = 0;
+    static uint8_t  rx_timeout = 0;
+    uint16_t len;
+    
+    len = USART_RX_STA & 0x3FFF;
+    if (len == 0) {
+        last_rx_len = 0;
+        rx_timeout = 0;
+        return;
+    }
+    
+    if (len != last_rx_len) {
+        last_rx_len = len;
+        rx_timeout = 0;
+    }
+    
+    // 标准完成（\r\n）或超时（~100ms 无新数据）
+    if (!(USART_RX_STA & 0x8000) && ++rx_timeout <= 10)
+        return;
+    
+    USART_RX_BUF[len] = '\0';
+    while (len > 0 && (USART_RX_BUF[len-1] == '\r' || USART_RX_BUF[len-1] == '\n'))
+        USART_RX_BUF[--len] = '\0';
+    
+    if (strcmp((char*)USART_RX_BUF, "beep on") == 0) {
+        beep_enable = 1;
+        printf("[CMD] Beep: ON\r\n");
+    } else if (strcmp((char*)USART_RX_BUF, "beep off") == 0) {
+        beep_enable = 0;
+        printf("[CMD] Beep: OFF\r\n");
+    } else if (strcmp((char*)USART_RX_BUF, "diff easy") == 0) {
+        if (current_state == GAME_MENU) {
+            game_difficulty = DIFF_EASY;
+            Draw_Difficulty_Menu(game_difficulty, (menu_focus == 0));
+            printf("[CMD] Difficulty: EASY\r\n");
+        } else {
+            printf("[CMD] Difficulty change only allowed in MENU\r\n");
+        }
+    } else if (strcmp((char*)USART_RX_BUF, "diff medium") == 0) {
+        if (current_state == GAME_MENU) {
+            game_difficulty = DIFF_MEDIUM;
+            Draw_Difficulty_Menu(game_difficulty, (menu_focus == 0));
+            printf("[CMD] Difficulty: MEDIUM\r\n");
+        } else {
+            printf("[CMD] Difficulty change only allowed in MENU\r\n");
+        }
+    } else if (strcmp((char*)USART_RX_BUF, "diff hard") == 0) {
+        if (current_state == GAME_MENU) {
+            game_difficulty = DIFF_HARD;
+            Draw_Difficulty_Menu(game_difficulty, (menu_focus == 0));
+            printf("[CMD] Difficulty: HARD\r\n");
+        } else {
+            printf("[CMD] Difficulty change only allowed in MENU\r\n");
+        }
+    } else {
+        printf("[CMD] Unknown: %s\r\n", USART_RX_BUF);
+    }
+    
+    USART_RX_STA = 0;
+    last_rx_len = 0;
+    rx_timeout = 0;
+}
+
 int main(void)
 {
     uint8_t key_val = 0;
@@ -130,8 +199,6 @@ int main(void)
     uint32_t last_game_time_sec = 9999;
     uint32_t temp_mm = 0;              
     uint32_t temp_ss = 0;              
-
-    uint8_t menu_focus = 0;            // 0: 难度选择聚焦， 1: Start 按钮聚焦
 
     // 1. 系统外设初始化
     delay_init(168);     
@@ -154,10 +221,13 @@ int main(void)
     LCD_Clear(BLACK);
     BACK_COLOR = BLACK; 
 
+    printf("[INIT] Snake game ready\r\n"); // 验证 printf 基本输出
+
     while(1)
     {
         delay_ms(10); 
         key_val = KEY_Scan(0); 
+        Serial_CMD_Handler();
 
         // ================== 组合键检测（KEY2 和 KEY0 同时按下） ==================
         if (current_state == GAME_RUNNING && KEY2 == 0 && KEY0 == 0) 
@@ -425,6 +495,9 @@ int main(void)
 
                     LCD_ShowString(300, 12, 100, 16, 16, "Speed: L");
                     LCD_ShowNum(370, 12, speed_level, 2, 16);
+
+                    printf("[SCORE] %d pts | Speed L%d (threshold=%d)\r\n",
+                           (int)score, (int)speed_level, (int)current_speed_threshold);
 
                     last_score = score;
                 }
