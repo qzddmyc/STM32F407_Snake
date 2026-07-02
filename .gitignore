@@ -1,0 +1,29 @@
+OBJ/*
+!OBJ/.gitkeep
+
+*.o
+*.d
+*.crf
+*.axf
+*.hex
+*.htm
+*.lnp
+*.map
+*.lst
+*.dep
+*.Bak
+
+*.uvguix.*
+*.uvgui.*
+
+.DS_Store
+Thumbs.db
+*.tmp
+
+# *.uvoptx
+# *.uvopt
+
+# JLinkSettings.ini
+
+# USER/DebugConfig/
+# *.dbgconf
