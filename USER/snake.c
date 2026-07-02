@@ -16,6 +16,12 @@ uint32_t score = 0;
 // 新增：定义全局对战赢家变量
 uint8_t winner = 0;
 
+// 金色食物与减速效果
+Point  myGoldFood;
+uint8_t gold_food_active = 0;
+uint8_t slow_active = 0;
+uint16_t slow_ticks = 0;
+
 /* ==================== 1. 像素级精细化绘制函数组 ==================== */
 
 // 擦除网格（用背景色涂满）
@@ -115,6 +121,24 @@ static void Draw_Food_Apple(int16_t x, int16_t y) {
     LCD_Fill(sx + 13, sy + 3, sx + 16, sy + 4, GREEN);
 }
 
+// 绘制金色苹果食物（与普通苹果形状一致，红色替换为金色）
+static void Draw_Gold_Food_Apple(int16_t x, int16_t y) {
+    uint16_t sx = GAME_X_START + x * GRID_SIZE;
+    uint16_t sy = GAME_Y_START + y * GRID_SIZE;
+    
+    LCD_Fill(sx, sy, sx + GRID_SIZE - 1, sy + GRID_SIZE - 1, COLOR_BG);
+    LCD_Fill(sx + 5, sy + 7, sx + 18, sy + 20, COLOR_GOLD);
+    
+    POINT_COLOR = COLOR_BG; 
+    LCD_DrawPoint(sx + 5, sy + 7);
+    LCD_DrawPoint(sx + 18, sy + 7);
+    LCD_DrawPoint(sx + 5, sy + 20);
+    LCD_DrawPoint(sx + 18, sy + 20);
+    
+    LCD_Fill(sx + 11, sy + 3, sx + 12, sy + 6, WHITE);
+    LCD_Fill(sx + 13, sy + 3, sx + 16, sy + 4, GREEN);
+}
+
 /* ==================== 2. 核心游戏控制与双蛇生存逻辑 ==================== */
 
 // 共享食物生成
@@ -147,6 +171,26 @@ static void Generate_Food(void) {
     }
     Draw_Food_Apple(myFood.x, myFood.y); 
     printf("[FOOD] Generated at (%d, %d)\r\n", myFood.x, myFood.y);
+    
+    // 35% 概率生成金色食物（至多一个，不与普通食物/蛇身重叠）
+    if (!gold_food_active && (rand() % 100) < 35) {
+        on_snake = 1;
+        while (on_snake) {
+            on_snake = 0;
+            myGoldFood.x = rand() % GAME_GRID_NUM_X;
+            myGoldFood.y = rand() % GAME_GRID_NUM_Y;
+            // 不与普通食物重叠
+            if (myGoldFood.x == myFood.x && myGoldFood.y == myFood.y) on_snake = 1;
+            // 不与 1 号蛇重叠
+            for (i = 0; i < mySnake.length && !on_snake; i++) {
+                if (mySnake.body[i].x == myGoldFood.x && mySnake.body[i].y == myGoldFood.y)
+                    on_snake = 1;
+            }
+        }
+        gold_food_active = 1;
+        Draw_Gold_Food_Apple(myGoldFood.x, myGoldFood.y);
+        printf("[GOLD] Generated at (%d, %d)\r\n", myGoldFood.x, myGoldFood.y);
+    }
 }
 
 // 改变 1 号蛇方向
@@ -196,6 +240,9 @@ void Snake_Game_Init(void) {
     LED0 = 1; 
     LED1 = 1;
     score = 0;
+    gold_food_active = 0;
+    slow_active = 0;
+    slow_ticks = 0;
     
     // 铺底黑色游戏区域
     LCD_Fill(
@@ -283,6 +330,8 @@ void Snake_Redraw(void) {
     }
     
     Draw_Food_Apple(myFood.x, myFood.y);
+    if (gold_food_active)
+        Draw_Gold_Food_Apple(myGoldFood.x, myGoldFood.y);
 }
 
 // 核心时钟节拍：单人/双人并行动画与全方位碰撞致死算法
@@ -296,7 +345,8 @@ void Snake_Game_Tick(void) {
         // ================== A. 单人模式运行逻辑 (保持原有优化) ==================
         Point old_tail;
         Point next_head;
-        uint8_t ate_food = 0;
+        uint8_t ate_normal = 0;
+        uint8_t ate_golden = 0;
 
         old_tail = mySnake.body[mySnake.length - 1];
         next_head = mySnake.body[0];
@@ -329,17 +379,27 @@ void Snake_Game_Tick(void) {
             }
         }
         
-        // 吃到苹果
+        // 吃到普通苹果
         if (next_head.x == myFood.x && next_head.y == myFood.y) {
-            ate_food = 1;
-            LED1 = 0; // 绿灯闪
-            BEEP_ON(); delay_ms(30); BEEP = 0; 
-            LED1 = 1;
+            ate_normal = 1;
+            LED1 = 0; BEEP_ON(); delay_ms(30); BEEP = 0; LED1 = 1;
         }
         
-        if (ate_food) {
+        // 吃到金色苹果（2 倍分数 + 5 秒减速）
+        if (gold_food_active && next_head.x == myGoldFood.x && next_head.y == myGoldFood.y) {
+            ate_golden = 1;
+            gold_food_active = 0;
+            Clear_Grid_Cell(myGoldFood.x, myGoldFood.y);
+            slow_active = 1;
+            slow_ticks = 500;
+            printf("[GOLD] Eaten! +20 pts, speed slowed 5s\r\n");
+            LED1 = 0; BEEP_ON(); delay_ms(30); BEEP = 0; LED1 = 1;
+        }
+        
+        // 蛇身增长与分数
+        if (ate_normal || ate_golden) {
             if (mySnake.length < MAX_SNAKE_LEN) mySnake.length++;
-            score += 10;
+            score += ate_golden ? 20 : 10;
         }
         
         for (i = mySnake.length - 1; i > 0; i--) {
@@ -347,11 +407,13 @@ void Snake_Game_Tick(void) {
         }
         mySnake.body[0] = next_head;
         
-        if (!ate_food) {
+        // 擦尾 / 生成新食物
+        if (!ate_normal && !ate_golden) {
             Clear_Grid_Cell(old_tail.x, old_tail.y);
-        } else {
-            Generate_Food();
+        } else if (ate_normal) {
+            Generate_Food(); // 仅普通食物被吃时才生成新食物
         }
+        // ate_golden 为真但 ate_normal 为假时：蛇增长但不生成食物（普通食物仍在）
         
         Draw_Snake_Body(mySnake.body[1].x, mySnake.body[1].y);
         Draw_Snake_Head(mySnake.body[0].x, mySnake.body[0].y);

@@ -487,6 +487,21 @@ int main(void)
                         speed_level = 12 - current_speed_threshold; 
                     }
 
+                    // 金色食物减速效果（threshold +5，不超过初始速度）
+                    if (slow_active && slow_ticks > 0) {
+                        uint32_t initial_limit = (game_difficulty == DIFF_EASY) ? 25 :
+                                                (game_difficulty == DIFF_MEDIUM) ? 18 : 11;
+                        uint32_t capped = current_speed_threshold + 5;
+                        if (capped > initial_limit) capped = initial_limit;
+                        current_speed_threshold = capped;
+                        if (game_difficulty == DIFF_EASY)
+                            speed_level = 26 - current_speed_threshold;
+                        else if (game_difficulty == DIFF_MEDIUM)
+                            speed_level = 19 - current_speed_threshold;
+                        else
+                            speed_level = 12 - current_speed_threshold;
+                    }
+
                     POINT_COLOR = WHITE;
                     BACK_COLOR = BLACK; 
 
@@ -536,6 +551,15 @@ int main(void)
                 {
                     timer_count = 0;
                     Snake_Game_Tick(); 
+                }
+                
+                // 金色食物减速计时（每个主循环 10ms）
+                if (slow_active && slow_ticks > 0) {
+                    slow_ticks--;
+                    if (slow_ticks == 0) {
+                        slow_active = 0;
+                        last_score = 999; // 强制刷新速度
+                    }
                 }
                 break;
 

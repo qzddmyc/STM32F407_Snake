@@ -29,13 +29,3 @@
 					http://shop62057469.taobao.com
 					公司网站：www.alientek.com
 					技术论坛：www.openedv.com
-					
-					
-					
-					
-					
-					
-					
-					
-					
-					

@@ -67,6 +67,13 @@ stateDiagram-v2
 
 屏幕顶部显示：Score / Speed Lx / TIME MM:SS
 
+### 金色食物
+
+- 35% 概率与普通苹果同时出现（至多 1 个）
+- 吃到后 +20 分（2 倍），并触发 5 秒减速效果
+- 减速期间速度阈值 +5（不超过该难度初始速度）
+- 外观为金色苹果
+
 ---
 
 ## 串口调试
@@ -81,6 +88,8 @@ USART1 115200 连接串口调试助手。
 | 吃食物 | `[SCORE] N pts \| Speed Lx (threshold=N)` |
 | 死亡 | `[DEAD] Hit wall at (x, y)` 或 `Self-collision at (x, y)` |
 | 新食物 | `[FOOD] Generated at (x, y)` |
+| 金色食物生成 | `[GOLD] Generated at (x, y)` |
+| 吃到金色食物 | `[GOLD] Eaten! +20 pts, speed slowed 5s` |
 
 ### 指令（仅小写）
 
