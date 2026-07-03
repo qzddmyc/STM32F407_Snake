@@ -214,7 +214,7 @@ int main(void)
     KEY_Scan(0);         
 
     // 3. 读取最高记录
-    high_score = 0;//EEPROM_Read_HighScore();
+    high_score = EEPROM_Read_HighScore();
 
     // 4. 设置竖屏
     LCD_Display_Dir(0);  
