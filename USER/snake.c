@@ -419,7 +419,6 @@ void Snake_Game_Tick(void) {
         Point next_head;
         uint8_t ate_normal = 0;
         uint8_t ate_golden = 0;
-        uint8_t ate_magnet = 0;
         // 磁铁吸引范围判定（3x3 内 + 不越界）
         #define IN_RANGE(hx, hy, fx, fy) \
             ((int16_t)(hx)-(int16_t)(fx) >= -1 && (int16_t)(hx)-(int16_t)(fx) <= 1 && \
@@ -478,7 +477,6 @@ void Snake_Game_Tick(void) {
         // 吃到磁铁（8 秒吸引效果；3x3 范围有效）
         if (magnet_active && (attract_active ? IN_RANGE(next_head.x, next_head.y, myMagnet.x, myMagnet.y)
                                              : (next_head.x == myMagnet.x && next_head.y == myMagnet.y))) {
-            ate_magnet = 1;
             magnet_active = 0;
             Clear_Grid_Cell(myMagnet.x, myMagnet.y);
             attract_active = 1;
@@ -505,7 +503,7 @@ void Snake_Game_Tick(void) {
             Generate_Food(); // 仅普通食物被吃时才生成新食物
         }
         // ate_golden 为真但 ate_normal 为假时：蛇增长但不生成食物（普通食物仍在）
-        // ate_magnet 为真但 ate_normal 为假时：蛇不增长，尾正常擦除，不生成食物
+        // 磁铁被吃时：蛇不增长，尾正常擦除，不生成食物（普通食物仍在）
         
         Draw_Snake_Body(mySnake.body[1].x, mySnake.body[1].y);
         Draw_Snake_Head(mySnake.body[0].x, mySnake.body[0].y);
