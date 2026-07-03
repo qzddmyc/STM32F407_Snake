@@ -76,7 +76,7 @@ stateDiagram-v2
 ### 磁铁
 
 - 15% 概率与普通苹果同时出现（至多 1 个，与金苹果生成互斥）
-- 吃到后触发 8 秒**吸引效果**：蛇头可吃到 3×3 范围内的食物（金苹果、磁铁均有效）
+- 吃到后触发 15 秒**吸引效果**：蛇头可吃到 3×3 范围内的食物（金苹果、磁铁均有效）
 - 磁铁本身不加分、不增长蛇身
 - HUD 最右侧灰色 `M` 表示无效果，红色 `M` 表示吸引生效中
 
@@ -97,7 +97,7 @@ USART1 115200 连接串口调试助手。
 | 金色食物生成 | `[GOLD] Generated at (x, y)` |
 | 吃到金色食物 | `[GOLD] Eaten! +20 pts, speed slowed 5s` |
 | 磁铁生成 | `[MAGNET] Generated at (x, y)` |
-| 吃到磁铁 | `[MAGNET] Eaten! Attraction active 8s` |
+| 吃到磁铁 | `[MAGNET] Eaten! Attraction active 15s` |
 
 ### 指令（仅小写）
 

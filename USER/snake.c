@@ -459,6 +459,9 @@ void Snake_Game_Tick(void) {
         if (attract_active ? IN_RANGE(next_head.x, next_head.y, myFood.x, myFood.y)
                            : (next_head.x == myFood.x && next_head.y == myFood.y)) {
             ate_normal = 1;
+            // 磁铁远程吃到时，需显式擦除旧食物（蛇头不在该格）
+            if (attract_active && !(next_head.x == myFood.x && next_head.y == myFood.y))
+                Clear_Grid_Cell(myFood.x, myFood.y);
             LED1 = 0; BEEP_ON(); delay_ms(30); BEEP = 0; LED1 = 1;
         }
         
@@ -474,14 +477,14 @@ void Snake_Game_Tick(void) {
             LED1 = 0; BEEP_ON(); delay_ms(30); BEEP = 0; LED1 = 1;
         }
         
-        // 吃到磁铁（8 秒吸引效果；3x3 范围有效）
+        // 吃到磁铁（15 秒吸引效果；3x3 范围有效）
         if (magnet_active && (attract_active ? IN_RANGE(next_head.x, next_head.y, myMagnet.x, myMagnet.y)
                                              : (next_head.x == myMagnet.x && next_head.y == myMagnet.y))) {
             magnet_active = 0;
             Clear_Grid_Cell(myMagnet.x, myMagnet.y);
             attract_active = 1;
-            attract_ticks = 800;
-            printf("[MAGNET] Eaten! Attraction active 8s\r\n");
+            attract_ticks = 1500;
+            printf("[MAGNET] Eaten! Attraction active 15s\r\n");
             LED1 = 0; BEEP_ON(); delay_ms(30); BEEP = 0; LED1 = 1;
         }
         

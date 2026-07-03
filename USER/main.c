@@ -567,6 +567,13 @@ int main(void)
                     }
                 }
                 // 磁铁吸引计时（每个主循环 10ms）
+                {
+                    static uint8_t last_attract = 0;
+                    if (attract_active != last_attract) {
+                        last_attract = attract_active;
+                        last_score = 999; // 状态变化时强制刷新 HUD
+                    }
+                }
                 if (attract_active && attract_ticks > 0) {
                     attract_ticks--;
                     if (attract_ticks == 0) {
