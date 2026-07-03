@@ -511,6 +511,11 @@ int main(void)
                     LCD_ShowString(300, 12, 100, 16, 16, "Speed: L");
                     LCD_ShowNum(370, 12, speed_level, 2, 16);
 
+                    // 磁铁状态指示 (HUD 最右侧)
+                    POINT_COLOR = attract_active ? RED : GRAY;
+                    BACK_COLOR = BLACK;
+                    LCD_ShowString(450, 12, 20, 16, 16, "M");
+
                     printf("[SCORE] %d pts | Speed L%d (threshold=%d)\r\n",
                            (int)score, (int)speed_level, (int)current_speed_threshold);
 
@@ -559,6 +564,14 @@ int main(void)
                     if (slow_ticks == 0) {
                         slow_active = 0;
                         last_score = 999; // 强制刷新速度
+                    }
+                }
+                // 磁铁吸引计时（每个主循环 10ms）
+                if (attract_active && attract_ticks > 0) {
+                    attract_ticks--;
+                    if (attract_ticks == 0) {
+                        attract_active = 0;
+                        last_score = 999; // 强制刷新 HUD
                     }
                 }
                 break;

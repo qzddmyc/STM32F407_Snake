@@ -65,13 +65,20 @@ stateDiagram-v2
 
 ### HUD
 
-屏幕顶部显示：Score / Speed Lx / TIME MM:SS
+屏幕顶部显示：Score / Speed Lx / TIME MM:SS / M（磁铁状态）
 
 ### 金色食物
 
 - 35% 概率与普通苹果同时出现（至多 1 个，游戏开始时的首个食物不触发）
 - 吃到后 +20 分（2 倍），并触发 5 秒减速效果
 - 减速期间蛇头变为金色、速度阈值 +5（不超过该难度初始速度）
+
+### 磁铁
+
+- 15% 概率与普通苹果同时出现（至多 1 个，与金苹果生成互斥）
+- 吃到后触发 8 秒**吸引效果**：蛇头可吃到 3×3 范围内的食物（金苹果、磁铁均有效）
+- 磁铁本身不加分、不增长蛇身
+- HUD 最右侧灰色 `M` 表示无效果，红色 `M` 表示吸引生效中
 
 ---
 
@@ -89,6 +96,8 @@ USART1 115200 连接串口调试助手。
 | 新食物 | `[FOOD] Generated at (x, y)` |
 | 金色食物生成 | `[GOLD] Generated at (x, y)` |
 | 吃到金色食物 | `[GOLD] Eaten! +20 pts, speed slowed 5s` |
+| 磁铁生成 | `[MAGNET] Generated at (x, y)` |
+| 吃到磁铁 | `[MAGNET] Eaten! Attraction active 8s` |
 
 ### 指令（仅小写）
 
