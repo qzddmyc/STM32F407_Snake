@@ -21,6 +21,7 @@ Point  myGoldFood;
 uint8_t gold_food_active = 0;
 uint8_t slow_active = 0;
 uint16_t slow_ticks = 0;
+static uint8_t first_food_done = 0; // 首个食物生成标记
 
 /* ==================== 1. 像素级精细化绘制函数组 ==================== */
 
@@ -45,7 +46,8 @@ static void Draw_Snake_Head(int16_t x, int16_t y) {
     uint16_t sy = GAME_Y_START + y * GRID_SIZE;
     
     LCD_Fill(sx, sy, sx + GRID_SIZE - 1, sy + GRID_SIZE - 1, COLOR_BG);
-    LCD_Fill(sx + 1, sy + 1, sx + GRID_SIZE - 2, sy + GRID_SIZE - 2, COLOR_SNAKE_H);
+    LCD_Fill(sx + 1, sy + 1, sx + GRID_SIZE - 2, sy + GRID_SIZE - 2,
+             slow_active ? COLOR_GOLD : COLOR_SNAKE_H);
     
     switch (mySnake.direction) {
         case DIR_UP:
@@ -172,8 +174,8 @@ static void Generate_Food(void) {
     Draw_Food_Apple(myFood.x, myFood.y); 
     printf("[FOOD] Generated at (%d, %d)\r\n", myFood.x, myFood.y);
     
-    // 35% 概率生成金色食物（至多一个，不与普通食物/蛇身重叠）
-    if (!gold_food_active && (rand() % 100) < 35) {
+    // 35% 概率生成金色食物（至多一个，不与普通食物/蛇身重叠；首个食物不触发）
+    if (!gold_food_active && first_food_done && (rand() % 100) < 35) {
         on_snake = 1;
         while (on_snake) {
             on_snake = 0;
@@ -191,6 +193,7 @@ static void Generate_Food(void) {
         Draw_Gold_Food_Apple(myGoldFood.x, myGoldFood.y);
         printf("[GOLD] Generated at (%d, %d)\r\n", myGoldFood.x, myGoldFood.y);
     }
+    first_food_done = 1;
 }
 
 // 改变 1 号蛇方向
@@ -243,6 +246,7 @@ void Snake_Game_Init(void) {
     gold_food_active = 0;
     slow_active = 0;
     slow_ticks = 0;
+    first_food_done = 0;
     
     // 铺底黑色游戏区域
     LCD_Fill(
