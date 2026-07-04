@@ -457,49 +457,35 @@ int main(void)
                 if (score != last_score) 
                 {
                     uint32_t food_eaten = score / 10;
+                    uint32_t level = food_eaten / 3; // 每 3 苹果升 1 级
                     
                     if (game_difficulty == DIFF_EASY) 
                     {
-                        uint32_t decrease = food_eaten / 2;
-                        if (decrease < 15) {
-                            current_speed_threshold = 25 - decrease;
-                        } else {
-                            current_speed_threshold = 10;
-                        }
-                        speed_level = 26 - current_speed_threshold; 
+                        if (level > 12) level = 12;   // 最高 L13（22→10ms）
+                        current_speed_threshold = 22 - level;
+                        speed_level = 1 + level;
                     } 
                     else if (game_difficulty == DIFF_MEDIUM) 
                     {
-                        if (food_eaten < 13) {
-                            current_speed_threshold = 18 - food_eaten;
-                        } else {
-                            current_speed_threshold = 5;
-                        }
-                        speed_level = 19 - current_speed_threshold; 
+                        if (level > 9) level = 9;      // 最高 L10（16→7ms）
+                        current_speed_threshold = 16 - level;
+                        speed_level = 1 + level;
                     } 
                     else 
                     {
-                        if (food_eaten < 8) {
-                            current_speed_threshold = 11 - food_eaten;
-                        } else {
-                            current_speed_threshold = 3; 
-                        }
-                        speed_level = 12 - current_speed_threshold; 
+                        if (level > 6) level = 6;      // 最高 L7（10→4ms）
+                        current_speed_threshold = 10 - level;
+                        speed_level = 1 + level;
                     }
 
                     // 金色食物减速效果（threshold +5，不超过初始速度）
                     if (slow_active && slow_ticks > 0) {
-                        uint32_t initial_limit = (game_difficulty == DIFF_EASY) ? 25 :
-                                                (game_difficulty == DIFF_MEDIUM) ? 18 : 11;
+                        uint32_t initial_limit = (game_difficulty == DIFF_EASY) ? 22 :
+                                                (game_difficulty == DIFF_MEDIUM) ? 16 : 10;
                         uint32_t capped = current_speed_threshold + 5;
                         if (capped > initial_limit) capped = initial_limit;
                         current_speed_threshold = capped;
-                        if (game_difficulty == DIFF_EASY)
-                            speed_level = 26 - current_speed_threshold;
-                        else if (game_difficulty == DIFF_MEDIUM)
-                            speed_level = 19 - current_speed_threshold;
-                        else
-                            speed_level = 12 - current_speed_threshold;
+                        speed_level = 1 + (initial_limit - current_speed_threshold);
                     }
 
                     POINT_COLOR = WHITE;
