@@ -234,8 +234,9 @@ static void Generate_Food(void) {
         
         if (spawn_type != 0) {
             Point *target = (spawn_type == 1) ? &myGoldFood : &myMagnet;
+            uint16_t retry = 0;
             on_snake = 1;
-            while (on_snake) {
+            while (on_snake && retry < 1000) {
                 on_snake = 0;
                 target->x = rand() % GAME_GRID_NUM_X;
                 target->y = rand() % GAME_GRID_NUM_Y;
@@ -244,15 +245,18 @@ static void Generate_Food(void) {
                     if (mySnake.body[i].x == target->x && mySnake.body[i].y == target->y)
                         on_snake = 1;
                 }
+                retry++;
             }
-            if (spawn_type == 1) {
-                gold_food_active = 1;
-                Draw_Gold_Food_Apple(myGoldFood.x, myGoldFood.y);
-                printf("[GOLD] Generated at (%d, %d)\r\n", myGoldFood.x, myGoldFood.y);
-            } else {
-                magnet_active = 1;
-                Draw_Magnet(myMagnet.x, myMagnet.y);
-                printf("[MAGNET] Generated at (%d, %d)\r\n", myMagnet.x, myMagnet.y);
+            if (retry < 1000) {
+                if (spawn_type == 1) {
+                    gold_food_active = 1;
+                    Draw_Gold_Food_Apple(myGoldFood.x, myGoldFood.y);
+                    printf("[GOLD] Generated at (%d, %d)\r\n", myGoldFood.x, myGoldFood.y);
+                } else {
+                    magnet_active = 1;
+                    Draw_Magnet(myMagnet.x, myMagnet.y);
+                    printf("[MAGNET] Generated at (%d, %d)\r\n", myMagnet.x, myMagnet.y);
+                }
             }
         }
     }
