@@ -57,16 +57,7 @@ KEY_Scan(mode=0):
 
 ## 4. 状态机
 
-```mermaid
-stateDiagram-v2
-    [*] --> GAME_MENU
-    GAME_MENU --> GAME_RUNNING : KEY0 在 START 上
-    GAME_RUNNING --> GAME_PAUSED : KEY2 + KEY0 同时
-    GAME_PAUSED --> GAME_RUNNING : WK_UP
-    GAME_PAUSED --> GAME_MENU : KEY1
-    GAME_RUNNING --> GAME_OVER : 撞墙 / 撞自身
-    GAME_OVER --> GAME_MENU : KEY0
-```
+详见 [MANUAL.md](MANUAL.md) 状态机章节。
 
 ---
 
@@ -240,6 +231,35 @@ flowchart TD
 吃到: 不加分, 不增蛇身, 15 秒吸引效果
 吸引: 蛇头 3×3 范围内自动吃食物
 ```
+
+### 7.5 碰撞检测
+
+蛇头 (`next_head`) 与食物的判定分两种模式：
+
+**普通模式** (attract_active = 0)：蛇头坐标 **精确等于** 食物坐标。
+
+**吸引模式** (attract_active = 1)：蛇头在食物 **3×3 范围内** 即命中。
+
+```
+IN_RANGE = |head.x - food.x| ≤ 1 且 |head.y - food.y| ≤ 1
+```
+
+```mermaid
+flowchart TD
+    A["蛇头到达 next_head"] --> B{attract_active?}
+    B -->|否| C["精确匹配<br/>head == food"]
+    B -->|是| D["3×3 范围匹配<br/>IN_RANGE(head, food)"]
+    C --> E{命中?}
+    D --> E
+    E -->|普通苹果| F["ate_normal=1<br/>远程? → Clear_Grid_Cell 擦旧位<br/>LED 闪 + 蜂鸣"]
+    E -->|金苹果| G["ate_golden=1<br/>Clear_Grid_Cell 擦除<br/>+20 分 + 5s 减速"]
+    E -->|磁铁| H["Clear_Grid_Cell 擦除<br/>15s 吸引效果启动<br/>不加分, 不增长"]
+    E -->|未命中| I[无操作]
+```
+
+> **远程擦除**：吸引模式下蛇头不在食物格 → 食物不会像精确碰撞那样被蛇头覆盖 → 必须显式 `Clear_Grid_Cell`。
+
+> **三种食物检测独立**：同一个 tick 可同时命中普通+金+磁铁（均在 3×3 范围内），各自独立处理。
 
 ---
 

@@ -4,118 +4,71 @@
 
 ---
 
-## 硬件
+## 项目功能
 
-| 组件 | 说明 |
-|------|------|
-| MCU | STM32F407ZGT6, 168MHz |
-| 屏幕 | TFT-LCD 480x800 竖屏, FSMC 驱动 |
-| 按键 | WK_UP(PA0), KEY2(PE2), KEY1(PE3), KEY0(PE4) |
-| 蜂鸣器 | PF8, 支持静音开关 |
-| LED | DS0(PF9), DS1(PF10) |
-| 串口 | USART1, 115200, PA9/PA10 (CH340) |
-| EEPROM | I2C, 掉电保存最高分 |
+- 经典贪吃蛇玩法：18×30 网格，像素级精准绘制
+- 三级难度：EASY / MEDIUM / HARD，统一每 3 苹果升 1 级
+- 三种食物：普通苹果、金色苹果（双倍分数+减速）、磁铁（远程吸引）
+- 暂停 / 结算 / 掉电保存最高分
+- 串口调试：自动输出游戏状态 + 指令控制（蜂鸣器/难度切换）
+- 蜂鸣器静音开关
 
 ---
 
-## 状态机
+## 项目结构
 
-```mermaid
-stateDiagram-v2
-    [*] --> GAME_MENU
-    GAME_MENU --> GAME_RUNNING : KEY0 在 START 上确认
-    GAME_RUNNING --> GAME_PAUSED : KEY2 + KEY0 同时按下
-    GAME_PAUSED --> GAME_RUNNING : WK_UP 继续
-    GAME_PAUSED --> GAME_MENU : KEY1 退出
-    GAME_RUNNING --> GAME_OVER : 撞墙 / 撞自身
-    GAME_OVER --> GAME_MENU : KEY0 重新开始
+```
+STM32F407_Snake/
+├── CORE/              # ARM Cortex-M4 核心支持
+├── FWLIB/             # STM32F4 标准外设库
+├── HARDWARE/          # 板级驱动
+│   ├── BEEP/          # PF8 蜂鸣器
+│   ├── KEY/           # 按键扫描 PA0 PE2~4
+│   ├── LCD/           # TFT-LCD FSMC 驱动
+│   └── LED/           # PF9 PF10
+├── SYSTEM/            # 系统模块
+│   ├── delay/         # SysTick 延时
+│   ├── sys/           # 系统初始化
+│   └── usart/         # USART1 printf 重定向 中断接收
+├── USER/              # 用户应用层
+│   ├── main.c         # 主循环 状态机 串口指令
+│   ├── snake.c        # 蛇逻辑 食物生成 碰撞检测
+│   ├── snake.h        # 数据结构与接口
+│   └── eeprom.c/h     # AT24C02 最高分读写
+├── Sample_images/     # 食物图案设计稿 24×24
+├── README.md          # 项目介绍
+├── MANUAL.md          # 操作手册
+└── HOWITRUNS.md       # 程序运行全流程
 ```
 
 ---
 
-## 菜单操作
+## 硬件平台
 
-| 按键 | 功能 |
+| 组件 | 说明 |
 |------|------|
-| `KEY2` / `KEY0` | 左右移动焦点（难度选择 ? START 按钮） |
-| `WK_UP` / `KEY1` | 仅在难度聚焦时：上/下调整难度（带边界，不循环） |
-| `KEY0`（在 START 上） | 确认进入游戏 |
-
-难度聚焦时 LCD 高亮显示 `Select Difficulty:`，选中 START 时按钮变为白底黑字实心。
-
-### 难度
-
-| 难度 | 初始速度 | 加速规则 | 最快 | 满级需 |
-|------|:---:|------|:---:|:---:|
-| EASY | 220ms | 每 3 苹果升 1 级 | 100ms (L13) | 36 苹果 |
-| MEDIUM | 160ms | 每 3 苹果升 1 级 | 70ms (L10) | 27 苹果 |
-| HARD | 100ms | 每 3 苹果升 1 级 | 40ms (L7) | 18 苹果 |
-
-> 公式：`threshold = 初始 ? level`，`speed_level = 1 + level`，`level = food_eaten / 3`。
+| MCU | STM32F407ZGT6, 168MHz |
+| 屏幕 | TFT-LCD 480×800 竖屏, FSMC 驱动 |
+| 按键 | WK_UP (PA0), KEY2 (PE2), KEY1 (PE3), KEY0 (PE4) |
+| 蜂鸣器 | PF8, 支持静音开关 |
+| LED | DS0 (PF9), DS1 (PF10) |
+| 串口 | USART1 115200, PA9/PA10 (CH340) |
+| EEPROM | AT24C02, 软件 I2C (PB8/PB9), 掉电保存最高分 |
 
 ---
 
-## 游戏操作
+## 文档
 
-| 按键 | 方向 |
-|------|:---:|
-| WK_UP | 上 |
-| KEY2 | 左 |
-| KEY1 | 下 |
-| KEY0 | 右 |
-| KEY2 + KEY0 同时 | 暂停 |
-
-### HUD
-
-屏幕顶部显示：Score / Speed Lx / TIME MM:SS / M（磁铁状态）
-
-### 金色食物
-
-- 35% 概率与普通苹果同时出现（至多 1 个，游戏开始时的首个食物不触发）
-- 吃到后 +20 分（2 倍），并触发 5 秒减速效果
-- 减速期间蛇头变为金色、速度阈值 +5（不超过该难度初始值：EASY 22 / MEDIUM 16 / HARD 10）
-
-### 磁铁
-
-- 15% 概率与普通苹果同时出现（至多 1 个，与金苹果生成互斥）
-- 吃到后触发 15 秒**吸引效果**：蛇头可吃到 3×3 范围内的食物（金苹果、磁铁均有效）
-- 磁铁本身不加分、不增长蛇身
-- HUD 最右侧灰色 `M` 表示无效果，红色 `M` 表示吸引生效中
-
----
-
-## 串口调试
-
-USART1 115200 连接串口调试助手。
-
-### 自动输出
-
-| 事件 | 格式 |
-|------|------|
-| 启动 | `[INIT] Snake game ready` |
-| 吃食物 | `[SCORE] N pts \| Speed Lx (threshold=N)` |
-| 死亡 | `[DEAD] Hit wall at (x, y)` 或 `Self-collision at (x, y)` |
-| 新食物 | `[FOOD] Generated at (x, y)` |
-| 金色食物生成 | `[GOLD] Generated at (x, y)` |
-| 吃到金色食物 | `[GOLD] Eaten! +20 pts, speed slowed 5s` |
-| 磁铁生成 | `[MAGNET] Generated at (x, y)` |
-| 吃到磁铁 | `[MAGNET] Eaten! Attraction active 15s` |
-
-### 指令（仅小写）
-
-| 指令 | 功能 | 限制 |
-|------|------|------|
-| `beep on` / `beep off` | 蜂鸣器开关 | 无 |
-| `diff easy` / `medium` / `hard` | 切换难度 | 仅菜单中生效 |
-
-每条指令均回复 `[CMD] ...` 确认。蜂鸣器默认静音（`beep_enable = 0`）。
+- **[操作手册](MANUAL.md)** — 菜单操作、游戏玩法、串口指令
+- **[运行流程](HOWITRUNS.md)** — 程序完整执行逻辑、数据流、代码细节
 
 ---
 
 ## 注意事项
 
 - 4.3/7 寸屏需外部 12V 1A 供电
-- 串口必须初始化，否则 LCD 及 printf 无法工作
+- 串口须先初始化，否则 LCD 及 printf 不可用
+- 蜂鸣器默认静音：`beep_enable = 0`，通过串口 `beep on` 开启
 
 ---
 
