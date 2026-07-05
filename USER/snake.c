@@ -10,11 +10,11 @@ Game_State current_state = GAME_MENU;
 Difficulty game_difficulty = DIFF_MEDIUM; // 修复：game_difficulty 全局定义
 Game_Mode game_mode = MODE_SINGLE;         // 修复：game_mode 全局定义
 Snake mySnake;
-Snake mySnake2;                           // 2 号蛇变量
+// Snake mySnake2;                           // 2 号蛇变量
 Point myFood;                             // 修复：myFood 全局定义
 uint32_t score = 0;
-// 新增：定义全局对战赢家变量
-uint8_t winner = 0;
+uint32_t food_eaten = 0;  // 实际吃到的食物个数（金苹果+1，非按分数换算）
+// uint8_t winner = 0;
 
 // 金色食物与减速效果
 Point  myGoldFood;
@@ -75,7 +75,7 @@ static void Draw_Snake_Head(int16_t x, int16_t y) {
     }
 }
 
-// 2号蛇身：青色方块（内缩1像素黑边，凸显关节）
+/* 2号蛇身：青色方块
 static void Draw_Snake2_Body(int16_t x, int16_t y) {
     uint16_t sx = GAME_X_START + x * GRID_SIZE;
     uint16_t sy = GAME_Y_START + y * GRID_SIZE;
@@ -83,7 +83,7 @@ static void Draw_Snake2_Body(int16_t x, int16_t y) {
     LCD_Fill(sx + 1, sy + 1, sx + GRID_SIZE - 2, sy + GRID_SIZE - 2, COLOR_SNAKE2_B);
 }
 
-// 2号蛇头：蓝色圆角方块 + 雪白双眼（在深蓝色下更明显）
+// 2号蛇头：蓝色圆角方块 + 雪白双眼
 static void Draw_Snake2_Head(int16_t x, int16_t y) {
     uint16_t sx = GAME_X_START + x * GRID_SIZE;
     uint16_t sy = GAME_Y_START + y * GRID_SIZE;
@@ -110,6 +110,7 @@ static void Draw_Snake2_Head(int16_t x, int16_t y) {
             break;
     }
 }
+*/
 
 // 绘制苹果食物
 static void Draw_Food_Apple(int16_t x, int16_t y) {
@@ -205,15 +206,15 @@ static void Generate_Food(void) {
             }
         }
         
-        // 2. 双人模式下，检查是否生成在 2 号蛇身上
-        if (game_mode == MODE_BATTLE && !on_snake) {
-            for (i = 0; i < mySnake2.length; i++) {
-                if (mySnake2.body[i].x == myFood.x && mySnake2.body[i].y == myFood.y) {
-                    on_snake = 1; 
-                    break;
-                }
-            }
-        }
+        // 检查是否生成在 2 号蛇身上
+        // if (game_mode == MODE_BATTLE && !on_snake) {
+        //     for (i = 0; i < mySnake2.length; i++) {
+        //         if (mySnake2.body[i].x == myFood.x && mySnake2.body[i].y == myFood.y) {
+        //             on_snake = 1; 
+        //             break;
+        //         }
+        //     }
+        // }
     }
     Draw_Food_Apple(myFood.x, myFood.y); 
     printf("[FOOD] Generated at (%d, %d)\r\n", myFood.x, myFood.y);
@@ -276,7 +277,7 @@ void Snake_Change_Direction(uint8_t new_dir) {
     if (new_dir == DIR_RIGHT && mySnake.direction != DIR_LEFT) mySnake.direction = DIR_RIGHT;
 }
 
-// 修复：改变 2 号蛇的行进方向（解决 Snake2_Change_Direction 链接错误）
+/* Snake2_Change_Direction
 void Snake2_Change_Direction(uint8_t new_dir) {
     if (new_dir == DIR_UP && mySnake2.direction != DIR_DOWN) mySnake2.direction = DIR_UP;
     if (new_dir == DIR_DOWN && mySnake2.direction != DIR_UP) mySnake2.direction = DIR_DOWN;
@@ -284,7 +285,7 @@ void Snake2_Change_Direction(uint8_t new_dir) {
     if (new_dir == DIR_RIGHT && mySnake2.direction != DIR_LEFT) mySnake2.direction = DIR_RIGHT;
 }
 
-// 修复：键盘单字符拦截解析器函数（解决 Snake2_Change_Direction_By_Char 链接错误）
+// 键盘单字符拦截解析器函数
 uint8_t Snake2_Change_Direction_By_Char(char c) {
     if (current_state == GAME_RUNNING && game_mode == MODE_BATTLE) {
         if (c == 'w' || c == 'W') { Snake2_Change_Direction(DIR_UP);    return 1; }
@@ -294,6 +295,7 @@ uint8_t Snake2_Change_Direction_By_Char(char c) {
     }
     return 0; 
 }
+*/
 
 // 死亡爆闪警报辅助函数
 static void Play_Death_Alert(void) {
@@ -315,6 +317,7 @@ void Snake_Game_Init(void) {
     LED0 = 1; 
     LED1 = 1;
     score = 0;
+    food_eaten = 0;
     gold_food_active = 0;
     slow_active = 0;
     slow_ticks = 0;
@@ -353,6 +356,7 @@ void Snake_Game_Init(void) {
             Draw_Snake_Body(mySnake.body[i].x, mySnake.body[i].y); 
         }
     } 
+    /* 双人对战模式初始化
     else 
     {
         // ================== B. 双人对战模式初始化 (对角平行安全出生) ==================
@@ -388,6 +392,7 @@ void Snake_Game_Init(void) {
             Draw_Snake2_Body(mySnake2.body[i].x, mySnake2.body[i].y); 
         }
     }
+    */
     
     Generate_Food();
 }
@@ -401,12 +406,13 @@ void Snake_Redraw(void) {
     }
     Draw_Snake_Head(mySnake.body[0].x, mySnake.body[0].y);
     
-    if (game_mode == MODE_BATTLE) {
-        for (i = 1; i < mySnake2.length; i++) {
-            Draw_Snake2_Body(mySnake2.body[i].x, mySnake2.body[i].y);
-        }
-        Draw_Snake2_Head(mySnake2.body[0].x, mySnake2.body[0].y);
-    }
+    // 2号蛇重绘
+    // if (game_mode == MODE_BATTLE) {
+    //     for (i = 1; i < mySnake2.length; i++) {
+    //         Draw_Snake2_Body(mySnake2.body[i].x, mySnake2.body[i].y);
+    //     }
+    //     Draw_Snake2_Head(mySnake2.body[0].x, mySnake2.body[0].y);
+    // }
     
     Draw_Food_Apple(myFood.x, myFood.y);
     if (gold_food_active)
@@ -457,7 +463,7 @@ void Snake_Game_Tick(void) {
             next_head.y < 0 || next_head.y >= GAME_GRID_NUM_Y) {
             printf("[DEAD] Hit wall at (%d, %d)\r\n", next_head.x, next_head.y);
             current_state = GAME_OVER;
-            winner = 0; 
+            // winner = 0;
             Play_Death_Alert();
             return;
         }
@@ -467,7 +473,7 @@ void Snake_Game_Tick(void) {
             if (next_head.x == mySnake.body[i].x && next_head.y == mySnake.body[i].y) {
                 printf("[DEAD] Self-collision at (%d, %d)\r\n", next_head.x, next_head.y);
                 current_state = GAME_OVER;
-                winner = 0;
+                // winner = 0;
                 Play_Death_Alert();
                 return;
             }
@@ -511,6 +517,8 @@ void Snake_Game_Tick(void) {
         if (ate_normal || ate_golden) {
             if (mySnake.length < MAX_SNAKE_LEN) mySnake.length++;
             score += ate_golden ? 20 : 10;
+            if (ate_normal) food_eaten++;
+            if (ate_golden) food_eaten++;
         }
         
         for (i = mySnake.length - 1; i > 0; i--) {
@@ -529,6 +537,7 @@ void Snake_Game_Tick(void) {
         Draw_Snake_Body(mySnake.body[1].x, mySnake.body[1].y);
         Draw_Snake_Head(mySnake.body[0].x, mySnake.body[0].y);
     }
+    /* 双人对战模式运行逻辑
     else 
     {
         // ================== B. 双人对战模式运行逻辑 (双蛇并行算法) ==================
@@ -574,13 +583,11 @@ void Snake_Game_Tick(void) {
 
         // 4. 碰撞算法 C：1号蛇（红色）碰撞检查
         if (!p1_dead) {
-            // 是否咬到自己
             for (i = 1; i < mySnake.length - 1; i++) {
                 if (next_head_1.x == mySnake.body[i].x && next_head_1.y == mySnake.body[i].y) {
                     p1_dead = 1; break;
                 }
             }
-            // 是否撞上 2 号蛇（蓝色）身体的任意一节
             for (i = 0; i < mySnake2.length; i++) {
                 if (next_head_1.x == mySnake2.body[i].x && next_head_1.y == mySnake2.body[i].y) {
                     p1_dead = 1; break;
@@ -590,13 +597,11 @@ void Snake_Game_Tick(void) {
 
         // 5. 碰撞算法 D：2号蛇（蓝色）碰撞检查
         if (!p2_dead) {
-            // 是否咬到自己
             for (i = 1; i < mySnake2.length - 1; i++) {
                 if (next_head_2.x == mySnake2.body[i].x && next_head_2.y == mySnake2.body[i].y) {
                     p2_dead = 1; break;
                 }
             }
-            // 是否撞上 1 号蛇（红色）身体的任意一节
             for (i = 0; i < mySnake.length; i++) {
                 if (next_head_2.x == mySnake.body[i].x && next_head_2.y == mySnake.body[i].y) {
                     p2_dead = 1; break;
@@ -604,39 +609,35 @@ void Snake_Game_Tick(void) {
             }
         }
 
-        // 6. 结算大赢家：若任一玩家死亡，锁定胜负并发出红色闪光警报
+        // 6. 结算大赢家
         if (p1_dead || p2_dead) {
             current_state = GAME_OVER;
             if (p1_dead && p2_dead) {
-                winner = 0; // 同归于尽/平局
+                winner = 0;
             } else if (p1_dead && !p2_dead) {
-                winner = 2; // 1号死，2号蓝色获胜
+                winner = 2;
             } else {
-                winner = 1; // 2号死，1号红色获胜
+                winner = 1;
             }
-            Play_Death_Alert(); // 响起爆闪警报
+            Play_Death_Alert();
             return;
         }
 
         // 7. 抢苹果判定
         if (next_head_1.x == myFood.x && next_head_1.y == myFood.y) {
             ate_food_1 = 1;
-            LED1 = 0; // 红色抢到，绿色LED闪
-            BEEP_ON(); delay_ms(30); BEEP = 0;
-            LED1 = 1;
+            LED1 = 0; BEEP_ON(); delay_ms(30); BEEP = 0; LED1 = 1;
         }
         if (next_head_2.x == myFood.x && next_head_2.y == myFood.y) {
             ate_food_2 = 1;
-            LED0 = 0; // 蓝色抢到，红色LED闪（硬件区分反馈）
-            BEEP_ON(); delay_ms(30); BEEP = 0;
-            LED0 = 1;
+            LED0 = 0; BEEP_ON(); delay_ms(30); BEEP = 0; LED0 = 1;
         }
 
         // 8. 蛇关节增长
         uint8_t len1_before = mySnake.length, len2_before = mySnake2.length;
         if (ate_food_1) {
             if (mySnake.length < MAX_SNAKE_LEN) mySnake.length++;
-            score += 10; // 共用分数栏累计
+            score += 10;
         }
         if (ate_food_2) {
             if (mySnake2.length < MAX_SNAKE_LEN) mySnake2.length++;
@@ -654,7 +655,7 @@ void Snake_Game_Tick(void) {
         }
         mySnake2.body[0] = next_head_2;
 
-        // 10. 增量局部刷新：蛇未实际变长时擦除旧尾
+        // 10. 增量局部刷新
         if (mySnake.length == len1_before) {
             Clear_Grid_Cell(old_tail_1.x, old_tail_1.y);
         }
@@ -662,17 +663,15 @@ void Snake_Game_Tick(void) {
             Clear_Grid_Cell(old_tail_2.x, old_tail_2.y);
         }
         
-        // 如果任意一条蛇吃到苹果，重新生成共享食物
         if (ate_food_1 || ate_food_2) {
             Generate_Food();
         }
 
-        // 重绘 1 号蛇头部和身体关节
         Draw_Snake_Body(mySnake.body[1].x, mySnake.body[1].y);
         Draw_Snake_Head(mySnake.body[0].x, mySnake.body[0].y);
 
-        // 重绘 2 号蛇头部和身体关节
         Draw_Snake2_Body(mySnake2.body[1].x, mySnake2.body[1].y);
         Draw_Snake2_Head(mySnake2.body[0].x, mySnake2.body[0].y);
     }
+    */
 }

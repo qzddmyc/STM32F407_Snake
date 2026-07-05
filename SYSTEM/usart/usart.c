@@ -130,16 +130,14 @@ void USART1_IRQHandler(void)                	//串口1中断服务程序
 	{
 		Res =USART_ReceiveData(USART1);//(USART1->DR);	//读取接收到的数据
 		
-    // ================== 鏂板?烇細鍙屼汉妯″紡鐢佃剳閿?鐩樺崟閿?鎷︽埅鍣? ==================
-    extern uint8_t Snake2_Change_Direction_By_Char(char c);
-    if (Snake2_Change_Direction_By_Char(Res)) {
-				// 濡傛灉鏄? 2 鍙疯泧鐨勬柟鍚戞帶鍒堕敭锛屽湪姝ゅ?勭洿鎺ユ埅鏂?骞惰繑鍥烇紝涓嶆薄鏌撴?ｇ偣鍘熷瓙鐨勫師鎺ユ敹缂撳啿鍖?
-				#if SYSTEM_SUPPORT_OS
-					OSIntExit();
-				#endif
-				return; 
-		}
-        // ====================================================================
+    // 键盘单键拦截器（P2 WASD 方向控制，已移除）
+    // extern uint8_t Snake2_Change_Direction_By_Char(char c);
+    // if (Snake2_Change_Direction_By_Char(Res)) {
+    //     #if SYSTEM_SUPPORT_OS
+    //         OSIntExit();
+    //     #endif
+    //     return; 
+    // }
 
 		if((USART_RX_STA&0x8000)==0)//接收未完成
 		{

@@ -10,7 +10,8 @@
 #include <string.h>
 
 extern uint32_t score;
-// extern uint8_t winner; // 【已移除双人对战】引入 snake.c 中的赢家标志位
+extern uint32_t food_eaten;  // 实际吃到的食物个数
+// extern uint8_t winner;
 
 // 探索者开发板按键物理键值
 #define KEY0_PRES    1  // 最右侧按键 (PE4) -> 菜单：右选择  | 游戏：向右
@@ -57,16 +58,15 @@ void Draw_Difficulty_Menu(Difficulty diff, uint8_t focus)
 }
 
 // 新增内部辅助函数：局部更新“游戏模式”菜单（无闪烁）
+/*
 void Draw_Mode_Menu(Game_Mode mode, uint8_t focus)
 {
     BACK_COLOR = BLACK;
     
-    // 如果焦点在模式选择上，标题显示为白色，否则为灰色
     if (focus == 1) POINT_COLOR = WHITE;
     else POINT_COLOR = GRAY;
     LCD_ShowString(140, 440, 200, 16, 16, "Select Game Mode:");
     
-    // 单人模式
     if (mode == MODE_SINGLE) {
         POINT_COLOR = (focus == 1) ? GREEN : GRAY;
         LCD_ShowString(160, 470, 200, 16, 16, "> SINGLE PLAYER <");
@@ -74,16 +74,8 @@ void Draw_Mode_Menu(Game_Mode mode, uint8_t focus)
         POINT_COLOR = GRAY;
         LCD_ShowString(160, 470, 200, 16, 16, "  SINGLE PLAYER  ");
     }
-    
-    // 【已移除双人对战】双人对战模式
-    // if (mode == MODE_BATTLE) {
-    //     POINT_COLOR = (focus == 1) ? CYAN : GRAY;
-    //     LCD_ShowString(160, 500, 200, 16, 16, ">  BATTLE MODE  <");
-    // } else {
-    //     POINT_COLOR = GRAY;
-    //     LCD_ShowString(160, 500, 200, 16, 16, "   BATTLE MODE   ");
-    // }
 }
+*/
 
 // 内部辅助函数：局部更新"START"按钮（选中时实心白色+黑字，未选中时空心白框+白字）
 void Draw_Start_Button(uint8_t focus)
@@ -373,7 +365,7 @@ int main(void)
                             LCD_ShowString(140, 310, 200, 16, 16, "NEW RECORD!");
                         }
                     }
-                    // 【已移除双人对战】else 
+                    // else  // 双人对战（已移除） 
                     // {
                     //     // 双人对战模式：显示争夺总分，并炫酷点出赢家！
                     //     POINT_COLOR = WHITE;
@@ -502,7 +494,6 @@ int main(void)
                 // HUD 局部刷新与变速公式
                 if (score != last_score) 
                 {
-                    uint32_t food_eaten = score / 10;
                     uint32_t level = food_eaten / 3; // 每 3 苹果升 1 级
                     
                     if (game_difficulty == DIFF_EASY) 
