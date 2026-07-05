@@ -67,7 +67,7 @@ KEY_Scan(mode=0):
 
 ```
          SNAKE GAME              (红色大字)
-         BEST: 120               (黄色历史最高)
+         BEST: 120 / 85 / 30     (黄色各难度最高)
 
        Select Difficulty:        ← 聚焦时白色，否则灰色
        >  EASY  <                ← 当前选中：绿色高亮
@@ -105,28 +105,67 @@ KEY1:  仅在 menu_focus=0 → 难度下调 (EASY→MEDIUM→HARD)
 
 ## 6. 游戏运行 (GAME_RUNNING)
 
-### 6.1 进入游戏
+### 6.1 游戏区域
 
 ```
+参数:
+    GAME_X_START=24, GAME_Y_START=40   游戏区左上角
+    GRID_SIZE=24                       每格像素
+    GAME_GRID_NUM_X=18                 水平 18 格 (18×24=432px)
+    GAME_GRID_NUM_Y=30                 垂直 30 格 (30×24=720px)
+
+网格坐标 → 屏幕像素:
+    sx = GAME_X_START + x × GRID_SIZE
+    sy = GAME_Y_START + y × GRID_SIZE
+
 GAME_MENU → GAME_RUNNING:
-    LCD_DrawRectangle 画游戏边框
+    LCD_DrawRectangle 画灰色边框 (外扩 1px)
     Snake_Game_Init() 初始化蛇+食物
     timer_count=0, last_score=999, 时间清零
 ```
 
-### 6.2 蛇初始化
+### 6.2 蛇的结构与初始化
+
+```c
+#define MAX_SNAKE_LEN 100
+typedef struct {
+    Point body[MAX_SNAKE_LEN]; // body[0]=蛇头, body[1..len-1]=蛇身
+    uint16_t length;           // 当前长度
+    uint8_t direction;         // 行进方向
+} Snake;
+Snake mySnake;  // 全局唯一实例
+```
 
 ```
-Snake_Game_Init():
-    铺黑游戏区域 (18×30 格, 24px/格)
-    mySnake.length = 3, direction = RIGHT
-    蛇头居中 (x=9, y=15), 身体左延两格
-    绘制蛇头(红眼) + 蛇身(绿色)
-    Generate_Food() → 首个普通苹果
-    首个食物不触发金苹果/磁铁
+每段身体存储为网格坐标 (x, y):
+    body[0]       = 蛇头坐标
+    body[1]       = 第 1 节身体
+    body[2]       = 第 2 节身体
+    ...
+    body[length-1] = 蛇尾坐标
+
+初始化 (length=3, RIGHT):
+    蛇头居中 (9, 15), body[1]=(8,15), body[2]=(7,15)
+    绘制蛇头(红底+方向眼) + 蛇身(绿底黑边)
+    Generate_Food() → 首个普通苹果 (不触发金/磁)
 ```
 
-### 6.3 蛇 Tick 流程
+### 6.3 蛇移动原理
+
+```
+每 tick 身体整体前移一格:
+
+    body[4]=body[3]   ← 尾前移到前一段位置
+    body[3]=body[2]
+    body[2]=body[1]
+    body[1]=body[0]   ← 第 1 节移到旧头位置
+    body[0]=next_head ← 新头位置
+
+没吃食物 → 旧尾格 Clear_Grid_Cell 擦除
+吃了食物 → length++, 旧尾被移位覆盖, 不擦
+```
+
+### 6.4 蛇 Tick 流程
 
 ```mermaid
 flowchart TD
@@ -150,7 +189,7 @@ flowchart TD
 
 > 每 `current_speed_threshold × 10ms` 执行一次，由 main.c 的 `timer_count` 控制。
 
-### 6.4 增长原理
+### 6.5 增长原理
 
 ```
 吃之前 (len=4):   H 1 2 3         old_tail = body[3]
@@ -159,7 +198,7 @@ flowchart TD
                   body[3] 覆盖了旧尾位置 → 无需擦除
 ```
 
-### 6.5 HUD 刷新
+### 6.6 HUD 刷新
 
 ```
 每吃食物时 (score != last_score):
@@ -170,7 +209,7 @@ flowchart TD
     M               ← 灰=无磁铁吸引, 红=吸引中
 ```
 
-### 6.6 速度系统
+### 6.7 速度系统
 
 ```
 level = food_eaten / 3      ← 每 3 苹果升 1 级
@@ -331,13 +370,16 @@ beep_enable (默认 0):
 
 ```
 AT24C02, 软件 I2C (PB8/PB9)
-地址 56-57 存储 uint16_t 最高分 (大端)
+按难度分别存储, addr = offset × 2:
+  EASY:   地址 56-57 (offset 28)
+  MEDIUM: 地址 58-59 (offset 29)
+  HARD:   地址 60-61 (offset 30)
 
-读取: 启动时 EEPROM_Read_HighScore()
+读取: 启动时 EEPROM_Read_HighScore(28/29/30)
       空白芯片 (0xFFFF) → 返回 0
 
-保存: 破纪录时 EEPROM_Write_HighScore()
-      每次写入后 delay_ms(10) 等待物理写入周期
+保存: 破纪录时 EEPROM_Write_HighScore(offset, score)
+      按当前难度写入对应槽位
 ```
 
 ---

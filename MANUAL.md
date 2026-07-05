@@ -51,6 +51,7 @@ stateDiagram-v2
 
 ### HUD
 
+首页显示：BEST: EASY / MEDIUM / HARD（自然宽度）
 屏幕顶部显示：Score / Speed Lx / TIME MM:SS / G（金苹果状态） / M（磁铁状态）
 
 ### 金色食物

@@ -135,10 +135,11 @@ static void AT24C02_WriteOneByte(uint16_t WriteAddr, uint8_t DataToWrite) {
     delay_ms(10); // AT24C02 物理写入周期，不可缩短
 }
 
-// 供外部调用的最高分读取函数
-uint16_t EEPROM_Read_HighScore(void) {
-    uint8_t high = AT24C02_ReadOneByte(56);
-    uint8_t low = AT24C02_ReadOneByte(57);
+// 供外部调用的最高分读取函数 (offset: EASY=28, MEDIUM=29, HARD=30)
+uint16_t EEPROM_Read_HighScore(uint8_t offset) {
+    uint16_t addr = offset * 2;
+    uint8_t high = AT24C02_ReadOneByte(addr);
+    uint8_t low = AT24C02_ReadOneByte(addr + 1);
     uint16_t record = (high << 8) | low;
     
     if (record == 0xFFFF) return 0;
@@ -146,9 +147,10 @@ uint16_t EEPROM_Read_HighScore(void) {
 }
 
 // 供外部调用的最高分保存函数
-void EEPROM_Write_HighScore(uint16_t score) {
+void EEPROM_Write_HighScore(uint8_t offset, uint16_t score) {
+    uint16_t addr = offset * 2;
     uint8_t high = (score >> 8) & 0xFF;
     uint8_t low = score & 0xFF;
-    AT24C02_WriteOneByte(56, high);
-    AT24C02_WriteOneByte(57, low);
+    AT24C02_WriteOneByte(addr, high);
+    AT24C02_WriteOneByte(addr + 1, low);
 }

@@ -191,7 +191,9 @@ int main(void)
     uint32_t last_score = 999;         
     uint32_t current_speed_threshold = 20; 
     uint32_t speed_level = 1;          
-    uint16_t high_score = 0;           
+    uint16_t high_score_easy = 0;
+    uint16_t high_score_medium = 0;
+    uint16_t high_score_hard = 0;           
     uint8_t is_new_record = 0;         
 
     uint32_t game_time_sec = 0;        
@@ -213,8 +215,10 @@ int main(void)
     delay_ms(300);       
     KEY_Scan(0);         
 
-    // 3. 读取最高记录
-    high_score = EEPROM_Read_HighScore();
+    // 3. 读取各难度最高记录
+    high_score_easy   = EEPROM_Read_HighScore(28);
+    high_score_medium = EEPROM_Read_HighScore(29);
+    high_score_hard   = EEPROM_Read_HighScore(30);
 
     // 4. 设置竖屏
     LCD_Display_Dir(0);  
@@ -273,8 +277,12 @@ int main(void)
                     LCD_ShowString(140, 120, 200, 24, 24, "SNAKE GAME");
                     
                     POINT_COLOR = YELLOW;
-                    LCD_ShowString(170, 180, 200, 16, 16, "BEST: ");
-                    LCD_ShowNum(230, 180, high_score, 3, 16);
+                    {
+                        u8 buf[32];
+                        sprintf((char*)buf, "BEST: %d / %d / %d",
+                                high_score_easy, high_score_medium, high_score_hard);
+                        LCD_ShowString(140, 180, 200, 16, 16, buf);
+                    }
                     
                     // POINT_COLOR = WHITE;
                     // LCD_ShowString(110, 240, 300, 16, 16, "Press WK_UP to Start");
@@ -318,16 +326,27 @@ int main(void)
                     // 1. 如果是单人模式，进行历史最高纪录结算与断电保存
                     if (game_mode == MODE_SINGLE) 
                     {
-                        if (score > high_score) 
+                    {
+                        uint16_t *hs_ptr;
+                        uint8_t eeprom_off;
+                        if (game_difficulty == DIFF_EASY)
+                            { hs_ptr = &high_score_easy;   eeprom_off = 28; }
+                        else if (game_difficulty == DIFF_MEDIUM)
+                            { hs_ptr = &high_score_medium; eeprom_off = 29; }
+                        else
+                            { hs_ptr = &high_score_hard;   eeprom_off = 30; }
+                        
+                        if (score > *hs_ptr) 
                         {
-                            high_score = score;
-                            EEPROM_Write_HighScore(high_score); 
+                            *hs_ptr = score;
+                            EEPROM_Write_HighScore(eeprom_off, score); 
                             is_new_record = 1;
                             
                             BEEP_ON(); delay_ms(60); BEEP = 0; delay_ms(60);
                             BEEP_ON(); delay_ms(60); BEEP = 0; delay_ms(60);
                             BEEP_ON(); delay_ms(60); BEEP = 0;
                         }
+                    }
                     }
 
                     // 2. 绘制结算页
