@@ -218,18 +218,23 @@ static void Generate_Food(void) {
     Draw_Food_Apple(myFood.x, myFood.y); 
     printf("[FOOD] Generated at (%d, %d)\r\n", myFood.x, myFood.y);
     
-    // 特殊物品生成（金 35% / 磁 15%，互斥，首个食物不触发）
+    // 特殊物品生成（概率按难度区分，互斥，首个食物不触发）
     if (first_food_done) {
         uint8_t roll = rand() % 100;
         uint8_t spawn_type = 0; // 0=无, 1=金, 2=磁
+        uint8_t gold_pct, magnet_pct;
+        
+        if (game_difficulty == DIFF_EASY)           { gold_pct = 35; magnet_pct = 15; }
+        else if (game_difficulty == DIFF_MEDIUM)    { gold_pct = 25; magnet_pct = 10; }
+        else                                        { gold_pct = 15; magnet_pct =  5; }
         
         if (!gold_food_active && !magnet_active) {
-            if (roll < 35)      spawn_type = 1;  // 35% 金
-            else if (roll < 50) spawn_type = 2;  // 15% 磁
+            if (roll < gold_pct)                spawn_type = 1;
+            else if (roll < gold_pct + magnet_pct) spawn_type = 2;
         } else if (gold_food_active && !magnet_active) {
-            if (roll < 15)      spawn_type = 2;  // 15% 磁（金已在场）
+            if (roll < magnet_pct)              spawn_type = 2;
         } else if (!gold_food_active && magnet_active) {
-            if (roll < 35)      spawn_type = 1;  // 35% 金（磁已在场）
+            if (roll < gold_pct)                spawn_type = 1;
         }
         
         if (spawn_type != 0) {

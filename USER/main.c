@@ -497,9 +497,11 @@ int main(void)
                     LCD_ShowString(300, 12, 100, 16, 16, "Speed: L");
                     LCD_ShowNum(370, 12, speed_level, 2, 16);
 
-                    // 磁铁状态指示 (HUD 最右侧)
-                    POINT_COLOR = attract_active ? RED : GRAY;
+                    // 金苹果减速 + 磁铁状态指示 (HUD 最右侧)
+                    POINT_COLOR = slow_active ? COLOR_GOLD : GRAY;
                     BACK_COLOR = BLACK;
+                    LCD_ShowString(430, 12, 20, 16, 16, "G");
+                    POINT_COLOR = attract_active ? RED : GRAY;
                     LCD_ShowString(450, 12, 20, 16, 16, "M");
 
                     printf("[SCORE] %d pts | Speed L%d (threshold=%d)\r\n",
