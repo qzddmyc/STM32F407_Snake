@@ -466,11 +466,38 @@ int main(void)
                 break;
 
             case GAME_RUNNING:
-                // 按键映射
-                if (key_val == WKUP_PRES) Snake_Change_Direction(DIR_UP);    
-                if (key_val == KEY2_PRES) Snake_Change_Direction(DIR_LEFT);  
-                if (key_val == KEY1_PRES) Snake_Change_Direction(DIR_DOWN);
-                if (key_val == KEY0_PRES) Snake_Change_Direction(DIR_RIGHT);
+                // 按键映射 + 长按加速（200ms 防误触窗口）
+                {
+                    static uint16_t boost_cooldown = 0;
+                    uint8_t dir_before = mySnake.direction;
+                    
+                    if (key_val == WKUP_PRES) Snake_Change_Direction(DIR_UP);
+                    if (key_val == KEY2_PRES) Snake_Change_Direction(DIR_LEFT);
+                    if (key_val == KEY1_PRES) Snake_Change_Direction(DIR_DOWN);
+                    if (key_val == KEY0_PRES) Snake_Change_Direction(DIR_RIGHT);
+
+                    // 方向变化时启动 200ms 冷却
+                    if (mySnake.direction != dir_before)
+                        boost_cooldown = 20; // 20 × 10ms = 200ms
+                    else if (boost_cooldown > 0)
+                        boost_cooldown--;
+
+                    // 冷却结束后，按住同向键则加速
+                    uint8_t boost = 0;
+                    if (boost_cooldown == 0) {
+                        if (mySnake.direction == DIR_UP    && WK_UP) boost = 1;
+                        if (mySnake.direction == DIR_DOWN  && KEY1 == 0) boost = 1;
+                        if (mySnake.direction == DIR_LEFT  && KEY2 == 0) boost = 1;
+                        if (mySnake.direction == DIR_RIGHT && KEY0 == 0) boost = 1;
+                    }
+                    
+                    uint32_t effective = boost ? 3 : current_speed_threshold;
+                    timer_count++;
+                    if (timer_count >= effective) {
+                        timer_count = 0;
+                        Snake_Game_Tick();
+                    }
+                }
 
                 // HUD 局部刷新与变速公式
                 if (score != last_score) 
@@ -558,13 +585,6 @@ int main(void)
                     last_game_time_sec = game_time_sec;
                 }
 
-                timer_count++;
-                if (timer_count >= current_speed_threshold) 
-                {
-                    timer_count = 0;
-                    Snake_Game_Tick(); 
-                }
-                
                 // 金色食物减速计时（每个主循环 10ms）
                 if (slow_active && slow_ticks > 0) {
                     slow_ticks--;

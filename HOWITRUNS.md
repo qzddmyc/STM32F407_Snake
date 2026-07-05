@@ -165,7 +165,34 @@ Snake mySnake;  // 全局唯一实例
 吃了食物 → length++, 旧尾被移位覆盖, 不擦
 ```
 
-### 6.4 蛇 Tick 流程
+### 6.4 移动节奏控制
+
+以下逻辑每 10ms 执行一次，决定当前帧是否触发 `Snake_Game_Tick()`：
+
+- **`KEY_Scan` 去抖**：按键按下时仅返回**一次**键值，用于方向切换。这里的逻辑是使用 mode=0，不支持连按的读取，先处理方向切换，之后再考虑连按按键时加速的问题。
+- **`boost_cooldown`**：方向改变时重置为 20，之后每帧递减。用于防抖，冷却期间（cooldown > 0）禁止加速，确保短按转向不会被误判为长按。
+- **GPIO 直读**：冷却结束后（cooldown == 0），直接读同向键引脚电平。此时按键若仍按下，说明是持续长按，触发加速。
+
+```mermaid
+flowchart TD
+    A["主循环 10ms"] --> B["KEY_Scan 去抖<br/>更新方向"]
+    B --> C{"方向改变?"}
+    C -->|是| D["boost_cooldown = 20"]
+    C -->|否| E{"boost_cooldown > 0?"}
+    E -->|是| F["boost_cooldown--"]
+    E -->|否| G{"GPIO 直读同向键<br/>按住?"}
+    D --> H["阈值 = 难度速度"]
+    F --> H
+    G -->|是| I["阈值 = 3（30ms/帧）"]
+    G -->|否| H
+    H --> J["timer_count 累加"]
+    I --> J
+    J --> K{"timer_count ≥ 阈值?"}
+    K -->|否| L[等待下一循环]
+    K -->|是| M["归零 → Snake_Game_Tick()"]
+```
+
+### 6.5 蛇 Tick 流程
 
 ```mermaid
 flowchart TD
@@ -187,9 +214,7 @@ flowchart TD
     L -->|只吃了金/磁| O[不擦尾, 不生成]
 ```
 
-> 每 `current_speed_threshold × 10ms` 执行一次，由 main.c 的 `timer_count` 控制。
-
-### 6.5 增长原理
+### 6.6 增长原理
 
 ```
 吃之前 (len=4):   H 1 2 3         old_tail = body[3]
@@ -198,7 +223,7 @@ flowchart TD
                   body[3] 覆盖了旧尾位置 → 无需擦除
 ```
 
-### 6.6 HUD 刷新
+### 6.7 HUD 刷新
 
 ```
 每吃食物时 (score != last_score):
@@ -209,7 +234,7 @@ flowchart TD
     M               ← 灰=无磁铁吸引, 红=吸引中
 ```
 
-### 6.7 速度系统
+### 6.8 速度系统
 
 ```
 level = food_eaten / 3      ← 每 3 苹果升 1 级
