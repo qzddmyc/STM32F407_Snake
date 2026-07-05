@@ -443,6 +443,15 @@ void Snake_Game_Tick(void) {
             case DIR_RIGHT: next_head.x++; break;
         }
         
+        // 计算蛇头前方一格（磁铁吸引时排除此格）
+        int16_t front_x = next_head.x, front_y = next_head.y;
+        switch (mySnake.direction) {
+            case DIR_UP:    front_y--; break;
+            case DIR_DOWN:  front_y++; break;
+            case DIR_LEFT:  front_x--; break;
+            case DIR_RIGHT: front_x++; break;
+        }
+        
         // 碰撞：撞墙
         if (next_head.x < 0 || next_head.x >= GAME_GRID_NUM_X ||
             next_head.y < 0 || next_head.y >= GAME_GRID_NUM_Y) {
@@ -464,8 +473,8 @@ void Snake_Game_Tick(void) {
             }
         }
         
-        // 吃到普通苹果（磁铁吸引时 3x3 范围有效）
-        if (attract_active ? IN_RANGE(next_head.x, next_head.y, myFood.x, myFood.y)
+        // 吃到普通苹果（磁铁吸引时 3x3 范围有效，排除前方一格）
+        if (attract_active ? (IN_RANGE(next_head.x, next_head.y, myFood.x, myFood.y) && (myFood.x != front_x || myFood.y != front_y))
                            : (next_head.x == myFood.x && next_head.y == myFood.y)) {
             ate_normal = 1;
             // 磁铁远程吃到时，需显式擦除旧食物（蛇头不在该格）
@@ -474,8 +483,8 @@ void Snake_Game_Tick(void) {
             LED1 = 0; BEEP_ON(); delay_ms(30); BEEP = 0; LED1 = 1;
         }
         
-        // 吃到金色苹果（2 倍分数 + 5 秒减速；磁铁吸引时 3x3 范围有效）
-        if (gold_food_active && (attract_active ? IN_RANGE(next_head.x, next_head.y, myGoldFood.x, myGoldFood.y)
+        // 吃到金色苹果（2 倍分数 + 5 秒减速；磁铁吸引时 3x3 范围有效，排除前方一格）
+        if (gold_food_active && (attract_active ? (IN_RANGE(next_head.x, next_head.y, myGoldFood.x, myGoldFood.y) && (myGoldFood.x != front_x || myGoldFood.y != front_y))
                                                 : (next_head.x == myGoldFood.x && next_head.y == myGoldFood.y))) {
             ate_golden = 1;
             gold_food_active = 0;
@@ -486,8 +495,8 @@ void Snake_Game_Tick(void) {
             LED1 = 0; BEEP_ON(); delay_ms(30); BEEP = 0; LED1 = 1;
         }
         
-        // 吃到磁铁（15 秒吸引效果；3x3 范围有效）
-        if (magnet_active && (attract_active ? IN_RANGE(next_head.x, next_head.y, myMagnet.x, myMagnet.y)
+        // 吃到磁铁（15 秒吸引效果；3x3 范围有效，排除前方一格）
+        if (magnet_active && (attract_active ? (IN_RANGE(next_head.x, next_head.y, myMagnet.x, myMagnet.y) && (myMagnet.x != front_x || myMagnet.y != front_y))
                                              : (next_head.x == myMagnet.x && next_head.y == myMagnet.y))) {
             magnet_active = 0;
             Clear_Grid_Cell(myMagnet.x, myMagnet.y);
@@ -498,6 +507,7 @@ void Snake_Game_Tick(void) {
         }
         
         // 蛇身增长与分数（磁铁不增长蛇身、不加分）
+        uint8_t length_before = mySnake.length;
         if (ate_normal || ate_golden) {
             if (mySnake.length < MAX_SNAKE_LEN) mySnake.length++;
             score += ate_golden ? 20 : 10;
@@ -508,14 +518,13 @@ void Snake_Game_Tick(void) {
         }
         mySnake.body[0] = next_head;
         
-        // 擦尾 / 生成新食物
-        if (!ate_normal && !ate_golden) {
+        // 擦尾：蛇未实际变长时擦除旧尾（含 length 封顶、磁铁等情况）
+        if (mySnake.length == length_before) {
             Clear_Grid_Cell(old_tail.x, old_tail.y);
-        } else if (ate_normal) {
-            Generate_Food(); // 仅普通食物被吃时才生成新食物
         }
-        // ate_golden 为真但 ate_normal 为假时：蛇增长但不生成食物（普通食物仍在）
-        // 磁铁被吃时：蛇不增长，尾正常擦除，不生成食物（普通食物仍在）
+        if (ate_normal) {
+            Generate_Food();
+        }
         
         Draw_Snake_Body(mySnake.body[1].x, mySnake.body[1].y);
         Draw_Snake_Head(mySnake.body[0].x, mySnake.body[0].y);
@@ -624,6 +633,7 @@ void Snake_Game_Tick(void) {
         }
 
         // 8. 蛇关节增长
+        uint8_t len1_before = mySnake.length, len2_before = mySnake2.length;
         if (ate_food_1) {
             if (mySnake.length < MAX_SNAKE_LEN) mySnake.length++;
             score += 10; // 共用分数栏累计
@@ -644,11 +654,11 @@ void Snake_Game_Tick(void) {
         }
         mySnake2.body[0] = next_head_2;
 
-        // 10. 增量局部刷新优化（零闪烁，高流畅）
-        if (!ate_food_1) {
+        // 10. 增量局部刷新：蛇未实际变长时擦除旧尾
+        if (mySnake.length == len1_before) {
             Clear_Grid_Cell(old_tail_1.x, old_tail_1.y);
         }
-        if (!ate_food_2) {
+        if (mySnake2.length == len2_before) {
             Clear_Grid_Cell(old_tail_2.x, old_tail_2.y);
         }
         

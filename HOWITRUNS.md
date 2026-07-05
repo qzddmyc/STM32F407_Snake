@@ -127,7 +127,7 @@ GAME_MENU → GAME_RUNNING:
 ### 6.2 蛇的结构与初始化
 
 ```c
-#define MAX_SNAKE_LEN 100
+#define MAX_SNAKE_LEN 200
 typedef struct {
     Point body[MAX_SNAKE_LEN]; // body[0]=蛇头, body[1..len-1]=蛇身
     uint16_t length;           // 当前长度
@@ -161,8 +161,8 @@ Snake mySnake;  // 全局唯一实例
     body[1]=body[0]   ← 第 1 节移到旧头位置
     body[0]=next_head ← 新头位置
 
-没吃食物 → 旧尾格 Clear_Grid_Cell 擦除
-吃了食物 → length++, 旧尾被移位覆盖, 不擦
+蛇未实际变长（没吃食物、length 封顶、只吃磁铁）→ 旧尾格 Clear_Grid_Cell 擦除
+蛇实际变长（吃食物且未封顶）→ 旧尾被移位覆盖, 不擦
 ```
 
 ### 6.4 移动节奏控制
@@ -208,19 +208,26 @@ flowchart TD
     H --> J["⑦ 身体后移<br/>body[i] = body[i-1]"]
     I --> J
     J --> K["body[0] = next_head<br/>新头就位"]
-    K --> L{"⑧ 没吃任何食物?"}
-    L -->|是| M[擦除旧尾 Clear_Grid_Cell]
-    L -->|吃了普通苹果| N[Generate_Food 生成新食物]
-    L -->|只吃了金/磁| O[不擦尾, 不生成]
+    K --> L{"⑧ length 未变?"}
+    L -->|是| M["擦除旧尾<br/>Clear_Grid_Cell"]
+    L -->|否| N["旧尾已被覆盖<br/>不擦"]
+    M --> O{"吃了普通苹果?"}
+    N --> O
+    O -->|是| P["Generate_Food<br/>生成新食物"]
 ```
 
 ### 6.6 增长原理
 
 ```
 吃之前 (len=4):   H 1 2 3         old_tail = body[3]
-吃之后 (len=5):   H 1 2 3 4       先 length=4→5
-                  └───────┘        后移：body[4]=body[3]
-                  body[3] 覆盖了旧尾位置 → 无需擦除
+
+吃之后未封顶 (len=5):  H 1 2 3 4  先 length++
+                       └───────┘   后移：body[4]=body[3]
+                       body[3] 覆盖旧尾位置 → 无需擦除
+
+吃之后已封顶 (len=200): H 1 2 ... 199   length 不变
+                        body[0..199] 全部前移一格
+                        旧尾被挤出 → 显式擦除
 ```
 
 ### 6.7 HUD 刷新
@@ -294,7 +301,7 @@ flowchart TD
 红蓝双色 U 型, 白色金属帽
 概率按难度: EASY 15% / MEDIUM 10% / HARD 5%, 至多 1 个, 与金苹果可共存
 吃到: 不加分, 不增蛇身, 15 秒吸引效果
-吸引: 蛇头 3×3 范围内自动吃食物
+吸引: 蛇头周围 8 格内自动吃食物（3×3 排除正前方）
 ```
 
 ### 7.5 碰撞检测
@@ -303,17 +310,20 @@ flowchart TD
 
 **普通模式** (attract_active = 0)：蛇头坐标 **精确等于** 食物坐标。
 
-**吸引模式** (attract_active = 1)：蛇头在食物 **3×3 范围内** 即命中。
+**吸引模式** (attract_active = 1)：蛇头周围 8 格内（3×3 排除正前方，正前方留给蛇自然行进）即命中。
 
 ```
+// 命中条件：3×3 范围内 且 非正前方
 IN_RANGE = |head.x - food.x| ≤ 1 且 |head.y - food.y| ≤ 1
+front = head + 方向向量 (↑:y-1, ↓:y+1, ←:x-1, →:x+1)
+命中 = IN_RANGE(head, food) && food ≠ front
 ```
 
 ```mermaid
 flowchart TD
     A["蛇头到达 next_head"] --> B{attract_active?}
     B -->|否| C["精确匹配<br/>head == food"]
-    B -->|是| D["3×3 范围匹配<br/>IN_RANGE(head, food)"]
+    B -->|是| D["8 格范围匹配<br/>（3×3 排除前方）"]
     C --> E{命中?}
     D --> E
     E -->|普通苹果| F["ate_normal=1<br/>远程? → Clear_Grid_Cell 擦旧位<br/>LED 闪 + 蜂鸣"]
@@ -324,7 +334,7 @@ flowchart TD
 
 > **远程擦除**：吸引模式下蛇头不在食物格 → 食物不会像精确碰撞那样被蛇头覆盖 → 必须显式 `Clear_Grid_Cell`。
 
-> **三种食物检测独立**：同一个 tick 可同时命中普通+金+磁铁（均在 3×3 范围内），各自独立处理。
+> **三种食物检测独立**：同一个 tick 可同时命中普通+金+磁铁（均在吸引范围内），各自独立处理。
 
 ---
 

@@ -37,7 +37,7 @@ typedef struct {
 } Point;
 
 // 5. 蛇的结构体
-#define MAX_SNAKE_LEN 100
+#define MAX_SNAKE_LEN 200
 typedef struct {
     Point body[MAX_SNAKE_LEN]; // body[0] 是蛇头，后面是蛇身
     uint16_t length;           // 蛇当前长度
