@@ -377,14 +377,48 @@ flowchart TD
 
 ### 10.2 接收指令
 
-```
-USART1 中断 → USART_RX_BUF → 主循环 Serial_CMD_Handler()
+三层架构：硬件中断逐字节接收 → 主循环触发 → 超时/换行解析。
 
-指令 (仅小写, 支持带/不带 \r\n):
-    beep on/off        蜂鸣器开关
-    diff easy/medium/hard  难度切换 (仅菜单)
+**第一层：USART1 中断 (`usart.c` USART1_IRQHandler)**
 
-超时: 100ms 无新数据自动按完整指令处理
+每个字符触发一次中断，逐字节存入 `USART_RX_BUF[]`。`USART_RX_STA` 为 16 位复用寄存器：
+
+| 位段 | 含义 |
+|------|------|
+| bit15 (0x8000) | 接收完成：1 = 已收到 `\r\n` |
+| bit14 (0x4000) | 半帧标志：1 = 上一字节是 `\r` |
+| bit13~0 (0x3FFF) | 已接收字节计数 |
+
+收到 `\r` 置 bit14，紧接着收到 `\n` 置 bit15 完成；若 `\r` 后非 `\n` 则丢弃整帧。
+
+**第二层：主循环 (`main.c` while(1))**
+
+中断只负责收字节，不负责判断“一句话说完了没有”；主循环以固定 10ms 间隔轮询 `Serial_CMD_Handler()`，由它来检查缓冲区是否已收到完整指令（`\r\n` 或超时），将异步接收与同步解析连接起来。
+
+**第三层：超时解析 (`main.c` Serial_CMD_Handler)**
+
+两种触发方式：
+
+1. **标准完成**：`USART_RX_STA` bit15 = 1（已收到 `\r\n`）
+2. **超时完成**：连续 10 次主循环（~100ms）字节计数不变
+
+触发后：`USART_RX_BUF` 末尾补 `\0` → 去掉尾部 `\r\n` → `strcmp` 精确匹配：
+
+| 指令 | 功能 | 限制 |
+|------|------|------|
+| `beep on` / `beep off` | 蜂鸣器开关 | 无 |
+| `diff easy` / `medium` / `hard` | 切换难度 | 仅菜单中生效 |
+
+```mermaid
+flowchart LR
+    A["串口助手<br/>发送 beep on\r\n"] --> B["CH340 → USART1 RX"]
+    B --> C["USART1_IRQHandler<br/>逐字节存入 USART_RX_BUF"]
+    C --> D["\r\n → bit15=1"]
+    D --> E["主循环 10ms<br/>Serial_CMD_Handler()"]
+    E --> F["补 \0，去 \r\n"]
+    F --> G["strcmp 匹配"]
+    G -->|匹配| H["执行指令 + printf 回复"]
+    G -->|不匹配| I["printf [CMD] Unknown"]
 ```
 
 ---

@@ -1,6 +1,6 @@
 #include "sys.h"
 #include "usart.h"
-// #include "led.h" // 【调试已清除】
+// #include "led.h" // test --
 ////////////////////////////////////////////////////////////////////////////////// 	 
 //如果使用ucos,则包括下面的头文件即可.
 #if SYSTEM_SUPPORT_OS
@@ -122,7 +122,7 @@ void uart_init(u32 bound){
 void USART1_IRQHandler(void)                	//串口1中断服务程序
 {
 	u8 Res;
-	// LED0 = !LED0; // 【调试已清除】verify IRQ fires
+	// LED0 = !LED0; // test -- verify IRQ fires
 #if SYSTEM_SUPPORT_OS 		//如果SYSTEM_SUPPORT_OS为真，则需要支持OS.
 	OSIntEnter();    
 #endif
