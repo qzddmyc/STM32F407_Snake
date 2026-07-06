@@ -35,7 +35,9 @@ stateDiagram-v2
 | MEDIUM | 160ms | 每 3 苹果升 1 级 | 70ms (L10) | 27 苹果 |
 | HARD | 100ms | 每 3 苹果升 1 级 | 40ms (L7) | 18 苹果 |
 
-> 公式：`threshold = 初始 ? level`，`speed_level = 1 + level`，`level = food_eaten / 3`。
+速度值指的是每 n 毫秒，蛇向前一步。每升一级，速度值 -10ms。
+
+公式：`threshold = 初始 ? level`，`speed_level = 1 + level`，`level = food_eaten / 3`。
 
 ---
 
@@ -51,8 +53,9 @@ stateDiagram-v2
 
 ### HUD
 
-首页显示：BEST: EASY / MEDIUM / HARD（自然宽度）
-屏幕顶部显示：Score / Speed Lx / TIME MM:SS / G（金苹果状态） / M（磁铁状态）
+首页显示最高记录：BEST: EASY / MEDIUM / HARD
+
+游戏界面屏幕顶部显示：Score / Speed Lx / TIME MM:SS / G（金苹果状态） / M（磁铁状态）
 
 ### 金色食物
 

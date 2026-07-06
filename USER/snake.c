@@ -5,12 +5,12 @@
 #include <stdlib.h> 
 #include "usart.h"
 
-// ==================== 0. 全局变量定义（已全部补齐，解决 L6218E 链接错误） ====================
+// ==================== 0. 全局变量定义 ====================
 Game_State current_state = GAME_MENU;
-Difficulty game_difficulty = DIFF_MEDIUM; // 修复：game_difficulty 全局定义
-Game_Mode game_mode = MODE_SINGLE;         // 修复：game_mode 全局定义
+Difficulty game_difficulty = DIFF_MEDIUM; // game_difficulty 全局定义
+Game_Mode game_mode = MODE_SINGLE;         // game_mode 全局定义
 Snake mySnake;
-Point myFood;                             // 修复：myFood 全局定义
+Point myFood;                             // myFood 全局定义
 uint32_t score = 0;
 uint32_t food_eaten = 0;  // 实际吃到的食物个数（金苹果+1，非按分数换算）
 
@@ -27,7 +27,7 @@ uint8_t magnet_active = 0;
 uint8_t attract_active = 0;
 uint16_t attract_ticks = 0;
 
-/* ==================== 1. 像素级精细化绘制函数组 ==================== */
+/* ==================== 1. 像素级绘制函数组 ==================== */
 
 // 擦除网格（用背景色涂满）
 static void Clear_Grid_Cell(int16_t x, int16_t y) {
@@ -91,7 +91,7 @@ static void Draw_Food_Apple(int16_t x, int16_t y) {
     LCD_Fill(sx + 13, sy + 3, sx + 16, sy + 4, GREEN);
 }
 
-// 绘制金色苹果食物（与普通苹果形状一致，红色替换为金色）
+// 绘制金色苹果食物
 static void Draw_Gold_Food_Apple(int16_t x, int16_t y) {
     uint16_t sx = GAME_X_START + x * GRID_SIZE;
     uint16_t sy = GAME_Y_START + y * GRID_SIZE;
@@ -109,7 +109,7 @@ static void Draw_Gold_Food_Apple(int16_t x, int16_t y) {
     LCD_Fill(sx + 13, sy + 3, sx + 16, sy + 4, GREEN);
 }
 
-// 绘制U型磁铁（红蓝双色，正中分界，顶部金属帽）
+// 绘制U型磁铁
 static void Draw_Magnet(int16_t x, int16_t y) {
     uint16_t sx = GAME_X_START + x * GRID_SIZE;
     uint16_t sy = GAME_Y_START + y * GRID_SIZE;
@@ -129,7 +129,7 @@ static void Draw_Magnet(int16_t x, int16_t y) {
     LCD_Fill(sx + 5, sy + 18, sx + 11, sy + 18, RED);
     LCD_Fill(sx + 12, sy + 18, sx + 18, sy + 18, BLUE);
     
-    // Row 19: 6R(6~11) + 6B(12~17) — 两端外角已抹黑
+    // Row 19: 6R(6~11) + 6B(12~17) — 两端外角抹黑
     LCD_Fill(sx + 6, sy + 19, sx + 11, sy + 19, RED);
     LCD_Fill(sx + 12, sy + 19, sx + 17, sy + 19, BLUE);
     
@@ -149,7 +149,7 @@ static void Draw_Magnet(int16_t x, int16_t y) {
 
 /* ==================== 2. 核心游戏控制 ==================== */
 
-// 共享食物生成
+// 食物生成
 static void Generate_Food(void) {
     uint8_t on_snake = 1;
     uint16_t i; 
@@ -159,7 +159,7 @@ static void Generate_Food(void) {
         myFood.x = rand() % GAME_GRID_NUM_X;
         myFood.y = rand() % GAME_GRID_NUM_Y;
         
-        // 1. 检查是否生成在 1 号蛇身上
+        // 检查是否生成在蛇身上
         for (i = 0; i < mySnake.length; i++) {
             if (mySnake.body[i].x == myFood.x && mySnake.body[i].y == myFood.y) {
                 on_snake = 1; 
@@ -220,7 +220,7 @@ static void Generate_Food(void) {
     first_food_done = 1;
 }
 
-// 改变 1 号蛇方向
+// 改变蛇的方向
 void Snake_Change_Direction(uint8_t new_dir) {
     if (new_dir == DIR_UP && mySnake.direction != DIR_DOWN) mySnake.direction = DIR_UP;
     if (new_dir == DIR_DOWN && mySnake.direction != DIR_UP) mySnake.direction = DIR_DOWN;
@@ -268,7 +268,7 @@ void Snake_Game_Init(void) {
     
     if (game_mode == MODE_SINGLE) 
     {
-        // ================== A. 单人模式初始化 ==================
+        // ================== 初始化 ==================
         mySnake.length = 3;
         mySnake.direction = DIR_RIGHT;
         
@@ -281,13 +281,12 @@ void Snake_Game_Init(void) {
         mySnake.body[2].x = mySnake.body[0].x - 2;   
         mySnake.body[2].y = mySnake.body[0].y;
         
-        // 绘制单人蛇
+        // 绘制蛇
         Draw_Snake_Head(mySnake.body[0].x, mySnake.body[0].y); 
         for (i = 1; i < mySnake.length; i++) {
             Draw_Snake_Body(mySnake.body[i].x, mySnake.body[i].y); 
         }
     } 
-    
     Generate_Food();
 }
 
@@ -315,7 +314,6 @@ void Snake_Game_Tick(void) {
 
     if (game_mode == MODE_SINGLE) 
     {
-        // ================== A. 单人模式运行逻辑 (保持原有优化) ==================
         Point old_tail;
         Point next_head;
         uint8_t ate_normal = 0;

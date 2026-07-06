@@ -1,4 +1,5 @@
 {
     "files.autoGuessEncoding": true,
-    "files.encoding": "gb2312"
+    "files.encoding": "gb2312",
+    "C_Cpp.errorSquiggles": "disabled"
 }

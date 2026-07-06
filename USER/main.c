@@ -255,9 +255,6 @@ int main(void)
                         LCD_ShowString(140, 180, 200, 16, 16, buf);
                     }
                     
-                    // POINT_COLOR = WHITE;
-                    // LCD_ShowString(110, 240, 300, 16, 16, "Press WK_UP to Start");
-                    
                     // 局部更新选择菜单（难度选择 + Start 按钮）
                     Draw_Difficulty_Menu(game_difficulty, 1);
                     Draw_Start_Button(0); // 初始未选中 Start
@@ -294,7 +291,7 @@ int main(void)
                 } 
                 else if (current_state == GAME_OVER) 
                 {
-                    // 1. 如果是单人模式，进行历史最高纪录结算与断电保存
+                    // 单人模式，进行历史最高纪录结算与断电保存
                     if (game_mode == MODE_SINGLE) 
                     {
                     {
@@ -320,13 +317,13 @@ int main(void)
                     }
                     }
 
-                    // 2. 绘制结算页
+                    // 绘制结算页
                     POINT_COLOR = RED;
                     LCD_ShowString(140, 160, 200, 24, 24, "GAME OVER");
                     
                     if (game_mode == MODE_SINGLE) 
                     {
-                        // 单人模式：显示得分、时间、新纪录标签
+                        // 显示得分、时间、新纪录标签
                         POINT_COLOR = WHITE;
                         LCD_ShowString(160, 220, 200, 16, 16, "Score: ");
                         LCD_ShowNum(220, 220, score, 3, 16); 
@@ -386,7 +383,7 @@ int main(void)
                     }
                 }
                 
-                // WK_UP（上）：仅在难度选择聚焦时，向上调整难度（HARD→MEDIUM→EASY，EASY为上边界）
+                // WK_UP（上）：仅在难度选择聚焦时，向上调整难度（HARD -> MEDIUM -> EASY，EASY为上边界）
                 if (key_val == WKUP_PRES && menu_focus == 0) 
                 {
                     if (game_difficulty == DIFF_HARD) {
@@ -401,7 +398,7 @@ int main(void)
                     // DIFF_EASY：无反应，已到达上边界
                 }
                 
-                // KEY1（下）：仅在难度选择聚焦时，向下调整难度（EASY→MEDIUM→HARD，HARD为下边界）
+                // KEY1（下）：仅在难度选择聚焦时，向下调整难度（EASY -> MEDIUM -> HARD，HARD为下边界）
                 if (key_val == KEY1_PRES && menu_focus == 0) 
                 {
                     if (game_difficulty == DIFF_EASY) {

@@ -66,22 +66,25 @@ KEY_Scan(mode=0):
 ### 界面
 
 ```
-         SNAKE GAME              (红色大字)
-         BEST: 120 / 85 / 30     (黄色各难度最高)
+        SNAKE GAME
+        BEST: 120 / 85 / 30      ← 各难度最高分
 
-       Select Difficulty:        ← 聚焦时白色，否则灰色
-       >  EASY  <                ← 当前选中：绿色高亮
-          MEDIUM
-          HARD
+        Select Difficulty:       ← 聚焦时白色，否则灰色
+           >  EASY  <            ← 当前选中：绿色高亮
+             MEDIUM
+              HARD
 
-       ┌──────────────┐
-       │    START     │          ← 未选中：空心白框白字
-       └──────────────┘           选中：白底黑字
+         ┌─────────────┐
+         │    START    │         ← 未选中：空心白框白字
+         └─────────────┘             选中：白底黑字
 
-       Menu Controls:
-       KEY2/KEY0: Move Focus (Left/Right)
-       WK_UP/KEY1: Change Difficulty (Up/Down)
-       KEY0 on START: Confirm & Play
+        WK_UP: Move UP      KEY1: Move Down
+        KEY2: Move LEFT     KEY0: Move RIGHT
+
+        Menu Controls:
+        KEY2/KEY0: Move Focus (Left/Right)
+        WK_UP/KEY1: Change Difficulty (Up/Down)
+        KEY0 on START: Confirm & Play
 ```
 
 ### 按键逻辑
@@ -221,12 +224,12 @@ flowchart TD
 ```
 吃之前 (len=4):   H 1 2 3         old_tail = body[3]
 
-吃之后未封顶 (len=5):  H 1 2 3 4  先 length++
+吃之后未封顶 (len=5):  H 1 2 3 4    先 length++
                        └───────┘   后移：body[4]=body[3]
                        body[3] 覆盖旧尾位置 → 无需擦除
 
 吃之后已封顶 (len=200): H 1 2 ... 199   length 不变
-                        body[0..199] 全部前移一格
+                        body[0..199]   全部前移一格
                         旧尾被挤出 → 显式擦除
 ```
 
@@ -291,7 +294,7 @@ flowchart TD
 ```
 外观同苹果, 红色→金色 (0xFE80)
 概率按难度: EASY 35% / MEDIUM 25% / HARD 15%, 至多 1 个
-吃到: +20 分, 5 秒减速 (threshold+5 上限初始值)
+吃到: +20 分, 5 秒减速 (threshold+5，上限为初始值)
 减速期间蛇头变为金色
 ```
 
@@ -342,7 +345,7 @@ flowchart TD
 
 ```
 触发: 游戏中 KEY2 + KEY0 同时按下
-界面: 半透明悬浮窗 + 操作提示
+界面: 不透明悬浮窗 + 操作提示
 操作: WK_UP 继续 / KEY1 退出
 ```
 
@@ -351,7 +354,7 @@ flowchart TD
 ## 9. 结算 (GAME_OVER)
 
 ```
-触发: 撞墙 或 撞自身 → Play_Death_Alert (LED+蜂鸣器 4 次爆闪)
+触发: 撞墙 或 撞自身 → Play_Death_Alert (LED+蜂鸣器 4 次闪烁)
 
 界面: GAME OVER 红字 + Score + TIME
       若破纪录: NEW RECORD + 蜂鸣器三连响 + EEPROM 自动保存

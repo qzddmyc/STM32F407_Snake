@@ -22,20 +22,3 @@ extern uint8_t beep_enable;       // 蜂鸣器静音开关：1=正常发声，0=静音（默认0）
 
 void BEEP_Init(void);//初始化		 				    
 #endif
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
