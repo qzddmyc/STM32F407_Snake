@@ -10,11 +10,9 @@ Game_State current_state = GAME_MENU;
 Difficulty game_difficulty = DIFF_MEDIUM; // 修复：game_difficulty 全局定义
 Game_Mode game_mode = MODE_SINGLE;         // 修复：game_mode 全局定义
 Snake mySnake;
-// Snake mySnake2;                           // 2 号蛇变量
 Point myFood;                             // 修复：myFood 全局定义
 uint32_t score = 0;
 uint32_t food_eaten = 0;  // 实际吃到的食物个数（金苹果+1，非按分数换算）
-// uint8_t winner = 0;
 
 // 金色食物与减速效果
 Point  myGoldFood;
@@ -74,43 +72,6 @@ static void Draw_Snake_Head(int16_t x, int16_t y) {
             break;
     }
 }
-
-/* 2号蛇身：青色方块
-static void Draw_Snake2_Body(int16_t x, int16_t y) {
-    uint16_t sx = GAME_X_START + x * GRID_SIZE;
-    uint16_t sy = GAME_Y_START + y * GRID_SIZE;
-    LCD_Fill(sx, sy, sx + GRID_SIZE - 1, sy + GRID_SIZE - 1, COLOR_BG);
-    LCD_Fill(sx + 1, sy + 1, sx + GRID_SIZE - 2, sy + GRID_SIZE - 2, COLOR_SNAKE2_B);
-}
-
-// 2号蛇头：蓝色圆角方块 + 雪白双眼
-static void Draw_Snake2_Head(int16_t x, int16_t y) {
-    uint16_t sx = GAME_X_START + x * GRID_SIZE;
-    uint16_t sy = GAME_Y_START + y * GRID_SIZE;
-    
-    LCD_Fill(sx, sy, sx + GRID_SIZE - 1, sy + GRID_SIZE - 1, COLOR_BG);
-    LCD_Fill(sx + 1, sy + 1, sx + GRID_SIZE - 2, sy + GRID_SIZE - 2, COLOR_SNAKE2_H);
-    
-    switch (mySnake2.direction) {
-        case DIR_UP:
-            LCD_Fill(sx + 5, sy + 5, sx + 8, sy + 8, WHITE);   
-            LCD_Fill(sx + 15, sy + 5, sx + 18, sy + 8, WHITE); 
-            break;
-        case DIR_DOWN:
-            LCD_Fill(sx + 5, sy + 15, sx + 8, sy + 18, WHITE);  
-            LCD_Fill(sx + 15, sy + 15, sx + 18, sy + 18, WHITE); 
-            break;
-        case DIR_LEFT:
-            LCD_Fill(sx + 5, sy + 5, sx + 8, sy + 8, WHITE);   
-            LCD_Fill(sx + 5, sy + 15, sx + 8, sy + 18, WHITE);  
-            break;
-        case DIR_RIGHT:
-            LCD_Fill(sx + 15, sy + 5, sx + 18, sy + 18, WHITE);  
-            LCD_Fill(sx + 15, sy + 15, sx + 18, sy + 18, WHITE); 
-            break;
-    }
-}
-*/
 
 // 绘制苹果食物
 static void Draw_Food_Apple(int16_t x, int16_t y) {
@@ -186,7 +147,7 @@ static void Draw_Magnet(int16_t x, int16_t y) {
     LCD_DrawPoint(sx + 18, sy + 19);
 }
 
-/* ==================== 2. 核心游戏控制与双蛇生存逻辑 ==================== */
+/* ==================== 2. 核心游戏控制 ==================== */
 
 // 共享食物生成
 static void Generate_Food(void) {
@@ -205,16 +166,6 @@ static void Generate_Food(void) {
                 break;
             }
         }
-        
-        // 检查是否生成在 2 号蛇身上
-        // if (game_mode == MODE_BATTLE && !on_snake) {
-        //     for (i = 0; i < mySnake2.length; i++) {
-        //         if (mySnake2.body[i].x == myFood.x && mySnake2.body[i].y == myFood.y) {
-        //             on_snake = 1; 
-        //             break;
-        //         }
-        //     }
-        // }
     }
     Draw_Food_Apple(myFood.x, myFood.y); 
     printf("[FOOD] Generated at (%d, %d)\r\n", myFood.x, myFood.y);
@@ -277,26 +228,6 @@ void Snake_Change_Direction(uint8_t new_dir) {
     if (new_dir == DIR_RIGHT && mySnake.direction != DIR_LEFT) mySnake.direction = DIR_RIGHT;
 }
 
-/* Snake2_Change_Direction
-void Snake2_Change_Direction(uint8_t new_dir) {
-    if (new_dir == DIR_UP && mySnake2.direction != DIR_DOWN) mySnake2.direction = DIR_UP;
-    if (new_dir == DIR_DOWN && mySnake2.direction != DIR_UP) mySnake2.direction = DIR_DOWN;
-    if (new_dir == DIR_LEFT && mySnake2.direction != DIR_RIGHT) mySnake2.direction = DIR_LEFT;
-    if (new_dir == DIR_RIGHT && mySnake2.direction != DIR_LEFT) mySnake2.direction = DIR_RIGHT;
-}
-
-// 键盘单字符拦截解析器函数
-uint8_t Snake2_Change_Direction_By_Char(char c) {
-    if (current_state == GAME_RUNNING && game_mode == MODE_BATTLE) {
-        if (c == 'w' || c == 'W') { Snake2_Change_Direction(DIR_UP);    return 1; }
-        if (c == 's' || c == 'S') { Snake2_Change_Direction(DIR_DOWN);  return 1; }
-        if (c == 'a' || c == 'A') { Snake2_Change_Direction(DIR_LEFT);  return 1; }
-        if (c == 'd' || c == 'D') { Snake2_Change_Direction(DIR_RIGHT); return 1; }
-    }
-    return 0; 
-}
-*/
-
 // 死亡爆闪警报辅助函数
 static void Play_Death_Alert(void) {
     uint8_t j;
@@ -310,7 +241,7 @@ static void Play_Death_Alert(void) {
     }
 }
 
-// 单/双人模式数据差异化初始化（已更新为：对角安全平行出生）
+// 游戏数据初始化
 void Snake_Game_Init(void) {
     uint16_t i; 
 
@@ -356,43 +287,6 @@ void Snake_Game_Init(void) {
             Draw_Snake_Body(mySnake.body[i].x, mySnake.body[i].y); 
         }
     } 
-    /* 双人对战模式初始化
-    else 
-    {
-        // ================== B. 双人对战模式初始化 (对角平行安全出生) ==================
-        // 1号玩家（红色，左上角）：向下出生
-        mySnake.length = 3;
-        mySnake.direction = DIR_DOWN;
-        mySnake.body[0].x = 2;     
-        mySnake.body[0].y = 2; // 蛇头
-        mySnake.body[1].x = 2;   
-        mySnake.body[1].y = 1; // 身体1
-        mySnake.body[2].x = 2;   
-        mySnake.body[2].y = 0; // 身体2
-        
-        // 2号玩家（蓝色，右下角）：向上出生（GAME_GRID_NUM_X - 3 即第 15 列， GAME_GRID_NUM_Y - 3 即第 27 行）
-        mySnake2.length = 3;
-        mySnake2.direction = DIR_UP;
-        mySnake2.body[0].x = GAME_GRID_NUM_X - 3;     
-        mySnake2.body[0].y = GAME_GRID_NUM_Y - 3; // 蛇头
-        mySnake2.body[1].x = mySnake2.body[0].x;   
-        mySnake2.body[1].y = mySnake2.body[0].y + 1; // 身体在头下方
-        mySnake2.body[2].x = mySnake2.body[0].x;   
-        mySnake2.body[2].y = mySnake2.body[0].y + 2;
-        
-        // 绘制 1 号玩家蛇（红/绿）
-        Draw_Snake_Head(mySnake.body[0].x, mySnake.body[0].y); 
-        for (i = 1; i < mySnake.length; i++) {
-            Draw_Snake_Body(mySnake.body[i].x, mySnake.body[i].y); 
-        }
-        
-        // 绘制 2 号玩家蛇（蓝/青）
-        Draw_Snake2_Head(mySnake2.body[0].x, mySnake2.body[0].y); 
-        for (i = 1; i < mySnake2.length; i++) {
-            Draw_Snake2_Body(mySnake2.body[i].x, mySnake2.body[i].y); 
-        }
-    }
-    */
     
     Generate_Food();
 }
@@ -406,14 +300,6 @@ void Snake_Redraw(void) {
     }
     Draw_Snake_Head(mySnake.body[0].x, mySnake.body[0].y);
     
-    // 2号蛇重绘
-    // if (game_mode == MODE_BATTLE) {
-    //     for (i = 1; i < mySnake2.length; i++) {
-    //         Draw_Snake2_Body(mySnake2.body[i].x, mySnake2.body[i].y);
-    //     }
-    //     Draw_Snake2_Head(mySnake2.body[0].x, mySnake2.body[0].y);
-    // }
-    
     Draw_Food_Apple(myFood.x, myFood.y);
     if (gold_food_active)
         Draw_Gold_Food_Apple(myGoldFood.x, myGoldFood.y);
@@ -421,7 +307,7 @@ void Snake_Redraw(void) {
         Draw_Magnet(myMagnet.x, myMagnet.y);
 }
 
-// 核心时钟节拍：单人/双人并行动画与全方位碰撞致死算法
+// 核心时钟节拍：蛇移动、碰撞检测与食物判定
 void Snake_Game_Tick(void) {
     uint16_t i;
 
@@ -463,7 +349,6 @@ void Snake_Game_Tick(void) {
             next_head.y < 0 || next_head.y >= GAME_GRID_NUM_Y) {
             printf("[DEAD] Hit wall at (%d, %d)\r\n", next_head.x, next_head.y);
             current_state = GAME_OVER;
-            // winner = 0;
             Play_Death_Alert();
             return;
         }
@@ -473,7 +358,6 @@ void Snake_Game_Tick(void) {
             if (next_head.x == mySnake.body[i].x && next_head.y == mySnake.body[i].y) {
                 printf("[DEAD] Self-collision at (%d, %d)\r\n", next_head.x, next_head.y);
                 current_state = GAME_OVER;
-                // winner = 0;
                 Play_Death_Alert();
                 return;
             }
@@ -537,141 +421,4 @@ void Snake_Game_Tick(void) {
         Draw_Snake_Body(mySnake.body[1].x, mySnake.body[1].y);
         Draw_Snake_Head(mySnake.body[0].x, mySnake.body[0].y);
     }
-    /* 双人对战模式运行逻辑
-    else 
-    {
-        // ================== B. 双人对战模式运行逻辑 (双蛇并行算法) ==================
-        Point old_tail_1, old_tail_2;
-        Point next_head_1, next_head_2;
-        uint8_t p1_dead = 0;
-        uint8_t p2_dead = 0;
-        uint8_t ate_food_1 = 0;
-        uint8_t ate_food_2 = 0;
-
-        old_tail_1 = mySnake.body[mySnake.length - 1];
-        old_tail_2 = mySnake2.body[mySnake2.length - 1];
-
-        next_head_1 = mySnake.body[0];
-        next_head_2 = mySnake2.body[0];
-
-        // 1. 计算双蛇下一帧预计位置
-        switch (mySnake.direction) {
-            case DIR_UP:    next_head_1.y--; break;
-            case DIR_DOWN:  next_head_1.y++; break;
-            case DIR_LEFT:  next_head_1.x--; break;
-            case DIR_RIGHT: next_head_1.x++; break;
-        }
-        switch (mySnake2.direction) {
-            case DIR_UP:    next_head_2.y--; break;
-            case DIR_DOWN:  next_head_2.y++; break;
-            case DIR_LEFT:  next_head_2.x--; break;
-            case DIR_RIGHT: next_head_2.x++; break;
-        }
-
-        // 2. 碰撞算法 A：边界撞墙判定
-        if (next_head_1.x < 0 || next_head_1.x >= GAME_GRID_NUM_X ||
-            next_head_1.y < 0 || next_head_1.y >= GAME_GRID_NUM_Y) p1_dead = 1;
-
-        if (next_head_2.x < 0 || next_head_2.x >= GAME_GRID_NUM_X ||
-            next_head_2.y < 0 || next_head_2.y >= GAME_GRID_NUM_Y) p2_dead = 1;
-
-        // 3. 碰撞算法 B：双蛇头对头迎面相撞
-        if (next_head_1.x == next_head_2.x && next_head_1.y == next_head_2.y) {
-            p1_dead = 1;
-            p2_dead = 1;
-        }
-
-        // 4. 碰撞算法 C：1号蛇（红色）碰撞检查
-        if (!p1_dead) {
-            for (i = 1; i < mySnake.length - 1; i++) {
-                if (next_head_1.x == mySnake.body[i].x && next_head_1.y == mySnake.body[i].y) {
-                    p1_dead = 1; break;
-                }
-            }
-            for (i = 0; i < mySnake2.length; i++) {
-                if (next_head_1.x == mySnake2.body[i].x && next_head_1.y == mySnake2.body[i].y) {
-                    p1_dead = 1; break;
-                }
-            }
-        }
-
-        // 5. 碰撞算法 D：2号蛇（蓝色）碰撞检查
-        if (!p2_dead) {
-            for (i = 1; i < mySnake2.length - 1; i++) {
-                if (next_head_2.x == mySnake2.body[i].x && next_head_2.y == mySnake2.body[i].y) {
-                    p2_dead = 1; break;
-                }
-            }
-            for (i = 0; i < mySnake.length; i++) {
-                if (next_head_2.x == mySnake.body[i].x && next_head_2.y == mySnake.body[i].y) {
-                    p2_dead = 1; break;
-                }
-            }
-        }
-
-        // 6. 结算大赢家
-        if (p1_dead || p2_dead) {
-            current_state = GAME_OVER;
-            if (p1_dead && p2_dead) {
-                winner = 0;
-            } else if (p1_dead && !p2_dead) {
-                winner = 2;
-            } else {
-                winner = 1;
-            }
-            Play_Death_Alert();
-            return;
-        }
-
-        // 7. 抢苹果判定
-        if (next_head_1.x == myFood.x && next_head_1.y == myFood.y) {
-            ate_food_1 = 1;
-            LED1 = 0; BEEP_ON(); delay_ms(30); BEEP = 0; LED1 = 1;
-        }
-        if (next_head_2.x == myFood.x && next_head_2.y == myFood.y) {
-            ate_food_2 = 1;
-            LED0 = 0; BEEP_ON(); delay_ms(30); BEEP = 0; LED0 = 1;
-        }
-
-        // 8. 蛇关节增长
-        uint8_t len1_before = mySnake.length, len2_before = mySnake2.length;
-        if (ate_food_1) {
-            if (mySnake.length < MAX_SNAKE_LEN) mySnake.length++;
-            score += 10;
-        }
-        if (ate_food_2) {
-            if (mySnake2.length < MAX_SNAKE_LEN) mySnake2.length++;
-            score += 10; 
-        }
-
-        // 9. 物理坐标更新：双蛇独立位移
-        for (i = mySnake.length - 1; i > 0; i--) {
-            mySnake.body[i] = mySnake.body[i - 1];
-        }
-        mySnake.body[0] = next_head_1;
-
-        for (i = mySnake2.length - 1; i > 0; i--) {
-            mySnake2.body[i] = mySnake2.body[i - 1];
-        }
-        mySnake2.body[0] = next_head_2;
-
-        // 10. 增量局部刷新
-        if (mySnake.length == len1_before) {
-            Clear_Grid_Cell(old_tail_1.x, old_tail_1.y);
-        }
-        if (mySnake2.length == len2_before) {
-            Clear_Grid_Cell(old_tail_2.x, old_tail_2.y);
-        }
-        
-        if (ate_food_1 || ate_food_2) {
-            Generate_Food();
-        }
-
-        Draw_Snake_Body(mySnake.body[1].x, mySnake.body[1].y);
-        Draw_Snake_Head(mySnake.body[0].x, mySnake.body[0].y);
-
-        Draw_Snake2_Body(mySnake2.body[1].x, mySnake2.body[1].y);
-        Draw_Snake2_Head(mySnake2.body[0].x, mySnake2.body[0].y);
-    }
-    */
 }

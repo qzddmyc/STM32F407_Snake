@@ -20,9 +20,6 @@
 #define COLOR_SNAKE_B GREEN
 #define COLOR_FOOD    YELLOW
 #define COLOR_GOLD    0xFE80 // 金色食物
-// 2号蛇配色定义（蓝头 + 青色身体）
-// #define COLOR_SNAKE2_H 0x001F // 纯蓝色 (BLUE)
-// #define COLOR_SNAKE2_B 0x07FF // 浅青色 (CYAN)
 
 // 3. 方向定义
 #define DIR_UP    1
@@ -54,7 +51,6 @@ typedef enum {
 // 游戏模式定义
 typedef enum {
     MODE_SINGLE = 0  // 单人模式
-    // MODE_BATTLE   // 双人对战（已移除）
 } Game_Mode;
 
 // 6. 游戏状态定义
@@ -72,10 +68,6 @@ extern Snake mySnake;
 extern Difficulty game_difficulty;
 // 声明全局模式变量
 extern Game_Mode game_mode;
-// 键盘字符操控拦截函数
-// uint8_t Snake2_Change_Direction_By_Char(char c);
-// 全局赢家标志位 (0:平局/单人, 1:P1胜, 2:P2胜)
-// extern uint8_t winner;
 
 // 金色食物与减速效果
 extern Point  myGoldFood;
