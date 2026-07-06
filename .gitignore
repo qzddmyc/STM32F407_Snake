@@ -1,6 +1,8 @@
 OBJ/*
 !OBJ/.gitkeep
 
+deliverable/*
+
 *.o
 *.d
 *.crf
